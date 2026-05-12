@@ -1,0 +1,594 @@
+@page "/"
+
+@*
+    Tonberry Tactics v0.5.0 — Index.razor
+    -----------------------------------------------------------------
+    Retro Final Fantasy (SNES/PS1) UI for the AskMrRobot-style hybrid
+    gear optimizer. All CSS is scoped under .ff-theme-wrapper.
+
+    The knife cursor is inline SVG (no external image asset required).
+    If/when /images/tonberry-knife.png exists, swap the <svg> inside
+    .knife-cursor for an <img> — animation continues to work.
+
+    Mock data structure is preserved verbatim per design handoff.
+*@
+
+<style>
+    /* === Tonberry Tactics — Retro FF UI =========================== */
+    /* All styling scoped inside .ff-theme-wrapper.                  */
+
+    @@import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap');
+
+    .ff-theme-wrapper {
+        font-family: 'VT323', 'Courier New', monospace;
+        font-size: 22px;
+        line-height: 1.25;
+        color: #ffffff;
+        background:
+            radial-gradient(ellipse at 20% 10%, rgba(64,96,192,0.18), transparent 55%),
+            radial-gradient(ellipse at 85% 95%, rgba(109,180,78,0.10), transparent 55%),
+            linear-gradient(180deg, #060a28 0%, #14184c 50%, #060a28 100%);
+        min-height: 100vh;
+        padding: 28px 22px 48px;
+        letter-spacing: 0.5px;
+    }
+    .ff-theme-wrapper * { box-sizing: border-box; }
+    .ff-theme-wrapper a { color: #ffcc44; text-decoration: none; }
+
+    /* ---- Header / masthead -------------------------------------- */
+    .ff-theme-wrapper .tt-header {
+        text-align: center;
+        margin-bottom: 26px;
+        padding-bottom: 18px;
+        border-bottom: 2px solid #4060a0;
+    }
+    .ff-theme-wrapper .tt-logo {
+        font-family: 'Press Start 2P', 'Courier New', monospace;
+        font-size: 26px;
+        color: #ffcc44;
+        text-shadow: 3px 3px 0 #663300, 6px 6px 0 rgba(0,0,0,0.55);
+        letter-spacing: 3px;
+        margin-bottom: 12px;
+    }
+    .ff-theme-wrapper .tt-tag {
+        font-size: 20px;
+        color: #c0d0ff;
+        font-style: italic;
+        margin-bottom: 6px;
+    }
+    .ff-theme-wrapper .tt-version {
+        font-size: 13px;
+        color: #6080c0;
+        letter-spacing: 2px;
+        font-family: 'Press Start 2P', monospace;
+    }
+
+    /* ---- Menu Box (classic FF window) --------------------------- */
+    .ff-theme-wrapper .menu-box {
+        background: linear-gradient(180deg, #181c5e 0%, #0a0e3a 100%);
+        border: 3px solid #ffffff;
+        border-radius: 0;
+        box-shadow:
+            inset 0 0 0 1px #6080c0,
+            0 0 0 1px #1a1e4a,
+            4px 4px 0 rgba(0,0,0,0.55);
+        margin-bottom: 18px;
+    }
+    .ff-theme-wrapper .menu-box-title {
+        background: linear-gradient(180deg, #2040a0 0%, #102078 100%);
+        color: #ffcc44;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 12px;
+        padding: 9px 14px;
+        border-bottom: 2px solid #ffffff;
+        letter-spacing: 1.5px;
+        text-shadow: 1px 1px 0 #000000;
+    }
+    .ff-theme-wrapper .menu-box-body {
+        padding: 16px 18px 18px;
+    }
+    .ff-theme-wrapper .menu-box-body p {
+        margin: 0 0 10px 0;
+    }
+    .ff-theme-wrapper .menu-box-body p:last-child {
+        margin-bottom: 0;
+    }
+
+    /* ---- Buttons ------------------------------------------------ */
+    .ff-theme-wrapper .ff-button {
+        background: linear-gradient(180deg, #4060c0 0%, #1f3690 100%);
+        border: 2px solid #ffffff;
+        border-radius: 0;
+        color: #ffffff;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 11px;
+        padding: 9px 16px;
+        cursor: pointer;
+        letter-spacing: 1.5px;
+        text-shadow: 1px 1px 0 #000000;
+        box-shadow:
+            inset 0 0 0 1px #80a0ff,
+            2px 2px 0 rgba(0,0,0,0.55);
+        transition: filter 0.1s ease;
+        margin: 4px 6px 4px 0;
+    }
+    .ff-theme-wrapper .ff-button:hover { filter: brightness(1.18); }
+    .ff-theme-wrapper .ff-button:active {
+        transform: translate(2px, 2px);
+        box-shadow: inset 0 0 0 1px #80a0ff;
+    }
+    .ff-theme-wrapper .ff-button-primary {
+        background: linear-gradient(180deg, #d8b042 0%, #8e6418 100%);
+        border-color: #ffcc44;
+        box-shadow:
+            inset 0 0 0 1px #ffd866,
+            2px 2px 0 rgba(0,0,0,0.55);
+    }
+    .ff-theme-wrapper .ff-button[disabled] {
+        opacity: 0.45;
+        cursor: not-allowed;
+        filter: grayscale(0.6);
+    }
+
+    /* ---- Textarea / inputs ------------------------------------- */
+    .ff-theme-wrapper .ff-textarea {
+        width: 100%;
+        background: #00001e;
+        border: 2px solid #4060a0;
+        color: #ffffff;
+        font-family: 'VT323', monospace;
+        font-size: 18px;
+        padding: 8px 10px;
+        resize: vertical;
+        margin-bottom: 10px;
+        letter-spacing: 0.5px;
+    }
+    .ff-theme-wrapper .ff-textarea:focus {
+        outline: none;
+        border-color: #80a0ff;
+        box-shadow: 0 0 0 1px #ffcc44;
+    }
+    .ff-theme-wrapper .ff-readonly {
+        background: #00000f;
+        border-color: #303060;
+        color: #ffcc44;
+    }
+
+    /* ---- Inline code -------------------------------------------- */
+    .ff-theme-wrapper code {
+        background: #00001e;
+        color: #ffcc44;
+        padding: 1px 7px;
+        font-family: 'VT323', monospace;
+        font-size: 18px;
+        border: 1px solid #4060a0;
+    }
+
+    /* ---- Layout grid -------------------------------------------- */
+    .ff-theme-wrapper .hero { margin-bottom: 20px; }
+    .ff-theme-wrapper .hero-instructions {
+        color: #c0d0ff;
+        font-size: 18px;
+    }
+    .ff-theme-wrapper .content-grid {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 20px;
+    }
+    @@media (max-width: 900px) {
+        .ff-theme-wrapper .content-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ---- Sidebar: Adventurer block ------------------------------ */
+    .ff-theme-wrapper .char-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 5px 0;
+        border-bottom: 1px dashed #303068;
+    }
+    .ff-theme-wrapper .char-row:last-child { border-bottom: none; }
+    .ff-theme-wrapper .char-label {
+        color: #8090c0;
+        font-size: 16px;
+        letter-spacing: 2px;
+        font-family: 'Press Start 2P', monospace;
+    }
+    .ff-theme-wrapper .char-value {
+        color: #ffffff;
+        font-size: 22px;
+    }
+    .ff-theme-wrapper .char-value-good   { color: #6db44e; }
+    .ff-theme-wrapper .char-value-wait   { color: #c0d0ff; }
+    .ff-theme-wrapper .char-value-accent { color: #ffcc44; }
+
+    /* ---- Materia list ------------------------------------------- */
+    .ff-theme-wrapper .materia-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+    .ff-theme-wrapper .materia-row {
+        display: flex;
+        align-items: center;
+        padding: 7px 8px;
+        border-bottom: 1px solid #1a2456;
+        font-size: 22px;
+    }
+    .ff-theme-wrapper .materia-row:last-child { border-bottom: none; }
+    .ff-theme-wrapper .materia-row:hover {
+        background: rgba(64,96,192,0.15);
+    }
+    .ff-theme-wrapper .materia-piece {
+        flex: 1;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .ff-theme-wrapper .materia-slot {
+        color: #8090c0;
+        margin-right: 14px;
+        min-width: 36px;
+        text-align: right;
+        font-family: 'VT323', monospace;
+    }
+    .ff-theme-wrapper .materia-arrow {
+        color: #6080c0;
+        margin-right: 10px;
+    }
+    .ff-theme-wrapper .materia-meld {
+        color: #ffcc44;
+        min-width: 110px;
+        text-align: right;
+    }
+
+    /* ---- The Tonberry Knife Cursor ------------------------------ */
+    /* Inline SVG knife with a "stab" animation. Pixelated rendering
+       so it slots into the retro aesthetic without anti-aliasing. */
+    .ff-theme-wrapper .knife-cursor {
+        display: inline-block;
+        width: 32px;
+        height: 16px;
+        margin-right: 10px;
+        flex-shrink: 0;
+        animation: stab 0.85s ease-in-out infinite;
+    }
+    .ff-theme-wrapper .knife-cursor svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+        image-rendering: pixelated;
+        filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.7));
+    }
+    @@keyframes stab {
+        0%, 55%, 100% { transform: translateX(0); }
+        65%           { transform: translateX(9px); }
+        75%           { transform: translateX(6px); }
+        85%           { transform: translateX(2px); }
+    }
+
+    /* ---- Empty state -------------------------------------------- */
+    .ff-theme-wrapper .empty-state {
+        text-align: center;
+        padding: 36px 16px;
+        color: #8090c0;
+    }
+    .ff-theme-wrapper .empty-state .empty-icon {
+        font-size: 44px;
+        margin-bottom: 14px;
+        opacity: 0.7;
+    }
+    .ff-theme-wrapper .empty-state p {
+        margin: 4px 0;
+        font-size: 20px;
+    }
+    .ff-theme-wrapper .muted { color: #6080c0; font-size: 18px; }
+    .ff-theme-wrapper .hint  {
+        font-size: 16px;
+        color: #6080c0;
+        margin-top: 8px;
+        font-style: italic;
+    }
+
+    /* ---- Footer ------------------------------------------------- */
+    .ff-theme-wrapper .tt-footer {
+        text-align: center;
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 2px solid #4060a0;
+        color: #6080c0;
+        font-size: 16px;
+        font-style: italic;
+        line-height: 1.6;
+    }
+    .ff-theme-wrapper .tt-footer .tlf-mark {
+        color: #6db44e;
+        font-style: normal;
+        letter-spacing: 2px;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 11px;
+    }
+</style>
+
+
+<div class="ff-theme-wrapper">
+
+    <!-- ============================================================
+         HEADER
+         ============================================================ -->
+    <header class="tt-header">
+        <div class="tt-logo">▶ TONBERRY TACTICS</div>
+        <div class="tt-tag">"No gear. No hope. No pants. Just onions."</div>
+        <div class="tt-version">TLF GEAR DIVISION &nbsp;·&nbsp; v0.5.0</div>
+    </header>
+
+
+    <!-- ============================================================
+         HERO — paste export string
+         ============================================================ -->
+    <section class="hero">
+        <div class="menu-box">
+            <div class="menu-box-title">▶ IMPORT FIELD DATA</div>
+            <div class="menu-box-body">
+                <p class="hero-instructions">
+                    Paste your exported gear string from the in-game plugin
+                    (run <code>/goblin export</code> in chat, then Ctrl+V here).
+                </p>
+                <textarea class="ff-textarea"
+                          @bind="ExportString"
+                          placeholder="GG-EXPORT:..."
+                          rows="3"></textarea>
+                <button class="ff-button ff-button-primary"
+                        @onclick="RunOptimization"
+                        disabled="@string.IsNullOrWhiteSpace(ExportString)">
+                    ⚔ OPTIMIZE
+                </button>
+                @if (OptimizedPlan != null)
+                {
+                    <button class="ff-button" @onclick="ClearPlan">
+                        ✕ CLEAR
+                    </button>
+                }
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ============================================================
+         TWO-COLUMN: Sidebar + Materia main
+         ============================================================ -->
+    <div class="content-grid">
+
+        <!-- ---- SIDEBAR ---- -->
+        <aside>
+
+            <!-- Adventurer status -->
+            <div class="menu-box">
+                <div class="menu-box-title">▶ ADVENTURER</div>
+                <div class="menu-box-body">
+                    <div class="char-row">
+                        <span class="char-label">JOB</span>
+                        <span class="char-value char-value-accent">@ParsedJob</span>
+                    </div>
+                    <div class="char-row">
+                        <span class="char-label">STATUS</span>
+                        @if (OptimizedPlan == null)
+                        {
+                            <span class="char-value char-value-wait">AWAITING</span>
+                        }
+                        else
+                        {
+                            <span class="char-value char-value-good">READY</span>
+                        }
+                    </div>
+                    <div class="char-row">
+                        <span class="char-label">MELDS</span>
+                        <span class="char-value">
+                            @(OptimizedPlan?.PlanRecommendations.Count ?? 0)
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output string for re-import -->
+            <div class="menu-box">
+                <div class="menu-box-title">▶ EXPORT TO GAME</div>
+                <div class="menu-box-body">
+                    @if (string.IsNullOrEmpty(GeneratedImportString))
+                    {
+                        <p class="muted">
+                            Run the optimizer to generate an import string.
+                        </p>
+                    }
+                    else
+                    {
+                        <textarea class="ff-textarea ff-readonly"
+                                  readonly
+                                  rows="3">@GeneratedImportString</textarea>
+                        <button class="ff-button"
+                                @onclick="@(() => CopyImportString())">
+                            ⚔ COPY
+                        </button>
+                        <p class="hint">
+                            Paste into the in-game plugin via
+                            <code>/goblin import</code>.
+                        </p>
+                    }
+                </div>
+            </div>
+
+        </aside>
+
+
+        <!-- ---- MAIN: Materia recommendations ---- -->
+        <main>
+            <div class="menu-box">
+                <div class="menu-box-title">▶ MATERIA REQUIRED</div>
+                <div class="menu-box-body">
+
+                    @if (OptimizedPlan == null)
+                    {
+                        <div class="empty-state">
+                            <div class="empty-icon">📜</div>
+                            <p>No optimization run yet.</p>
+                            <p class="muted">
+                                Paste your export string above and click
+                                OPTIMIZE.
+                            </p>
+                        </div>
+                    }
+                    else if (OptimizedPlan.PlanRecommendations.Count == 0)
+                    {
+                        <div class="empty-state">
+                            <div class="empty-icon">✓</div>
+                            <p>All slots filled — no melds required.</p>
+                            <p class="muted">
+                                Your gear is fully melded. The Tonberry
+                                approves.
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="materia-list">
+                            @foreach (var rec in OptimizedPlan.PlanRecommendations)
+                            {
+                                <li class="materia-row">
+                                    <span class="knife-cursor"
+                                          aria-hidden="true">
+                                        <!-- Pixel chef's knife. Swap to <img>
+                                             when tonberry-knife.png exists. -->
+                                        <svg viewBox="0 0 32 16"
+                                             preserveAspectRatio="none">
+                                            <!-- Wood handle -->
+                                            <rect x="2" y="6" width="8" height="4"
+                                                  fill="#6b3a1f"/>
+                                            <rect x="3" y="7" width="6" height="2"
+                                                  fill="#8b5a2f"/>
+                                            <!-- Brass bolster -->
+                                            <rect x="10" y="5" width="2" height="6"
+                                                  fill="#a87b3f"/>
+                                            <!-- Silver blade -->
+                                            <polygon points="12,5 30,8 12,11"
+                                                     fill="#c8c8d0"/>
+                                            <!-- Edge highlight -->
+                                            <polygon points="12,5 30,8 14,7"
+                                                     fill="#e8e8f0"/>
+                                        </svg>
+                                    </span>
+                                    <span class="materia-piece">
+                                        @rec.PieceName
+                                    </span>
+                                    <span class="materia-slot">
+                                        #@(rec.SlotIndex + 1)
+                                    </span>
+                                    <span class="materia-arrow">←</span>
+                                    <span class="materia-meld">
+                                        @rec.Materia.Display()
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                    }
+
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+
+    <!-- ============================================================
+         FOOTER
+         ============================================================ -->
+    <footer class="tt-footer">
+        <div class="tlf-mark">◆ TONBERRY LIBERATION FRONT ◆</div>
+        A Refia Rakkiri production · "Stab once, stab true."
+    </footer>
+
+</div>
+
+
+@code {
+    // ── State (preserved per design handoff) ──────────────────────────
+    private string ExportString          = "";
+    private string GeneratedImportString = "";
+    private string ParsedJob             = "WAR";
+
+    // ── Mock data structures (preserved verbatim per design handoff) ──
+    // These represent the shape the C# math core will return once
+    // GearGoblin.Core.dll is wired in. DO NOT modify the shape.
+    private class MockPlan
+    {
+        public List<MockRec> PlanRecommendations = new();
+    }
+    private class MockRec
+    {
+        public string PieceName { get; set; }
+        public int SlotIndex    { get; set; }
+        public MockMateria Materia { get; set; }
+    }
+    private class MockMateria
+    {
+        public string Name { get; set; }
+        public string Display() => Name;
+    }
+
+    private MockPlan OptimizedPlan;
+
+    // ── Stub: mock optimizer. Replace with GearGoblin.Core call. ──────
+    private void RunOptimization()
+    {
+        if (string.IsNullOrWhiteSpace(ExportString)) return;
+
+        OptimizedPlan = new MockPlan();
+        OptimizedPlan.PlanRecommendations.Add(new MockRec
+        {
+            PieceName = "Neo Kingdom Axe",
+            SlotIndex = 0,
+            Materia   = new MockMateria { Name = "Crit XII" }
+        });
+        OptimizedPlan.PlanRecommendations.Add(new MockRec
+        {
+            PieceName = "Neo Kingdom Helm of Maiming",
+            SlotIndex = 0,
+            Materia   = new MockMateria { Name = "Det XII" }
+        });
+        OptimizedPlan.PlanRecommendations.Add(new MockRec
+        {
+            PieceName = "Augmented Credendum Mail of Maiming",
+            SlotIndex = 0,
+            Materia   = new MockMateria { Name = "Crit XII" }
+        });
+        OptimizedPlan.PlanRecommendations.Add(new MockRec
+        {
+            PieceName = "Augmented Credendum Gauntlets of Maiming",
+            SlotIndex = 1,
+            Materia   = new MockMateria { Name = "DH XI" }
+        });
+        OptimizedPlan.PlanRecommendations.Add(new MockRec
+        {
+            PieceName = "Neo Kingdom Earring of Slaying",
+            SlotIndex = 0,
+            Materia   = new MockMateria { Name = "Det XII" }
+        });
+
+        GeneratedImportString = "GG-PLAN:eyJtZWxkcyI6WzEsMiwzWX0=";
+    }
+
+    private void ClearPlan()
+    {
+        OptimizedPlan          = null;
+        GeneratedImportString  = "";
+        ExportString           = "";
+    }
+
+    // Clipboard copy delegated to JS interop in the real app; for now
+    // a no-op so the button still wires up cleanly without IJSRuntime.
+    private void CopyImportString()
+    {
+        // TODO: inject IJSRuntime and call:
+        //   await JS.InvokeVoidAsync("navigator.clipboard.writeText", GeneratedImportString);
+    }
+}
