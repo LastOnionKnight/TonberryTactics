@@ -1,16 +1,21 @@
 @page "/"
+@using TonberryTactics.Models
+@using TonberryTactics.Services
+@inject IJSRuntime JS
 
 @*
-    Tonberry Tactics v0.5.0 — Index.razor
+    Tonberry Tactics v0.5.1 — Index.razor
     -----------------------------------------------------------------
     Retro Final Fantasy (SNES/PS1) UI for the AskMrRobot-style hybrid
     gear optimizer. All CSS is scoped under .ff-theme-wrapper.
 
+    v0.5.1 wires the mock optimizer to a real GG-EXPORT:v1: parser,
+    a hardcoded GNB Pure-Math optimizer, and a GG-PLAN:v1: serializer.
+    Portrait icons (wwwroot/portraits/*.jpg) now switch with state.
+
     The knife cursor is inline SVG (no external image asset required).
     If/when /images/tonberry-knife.png exists, swap the <svg> inside
     .knife-cursor for an <img> — animation continues to work.
-
-    Mock data structure is preserved verbatim per design handoff.
 *@
 
 <style>
@@ -309,6 +314,66 @@
         font-family: 'Press Start 2P', monospace;
         font-size: 11px;
     }
+    /* ---- Adventurer portrait (v0.5.1) --------------------------- */
+    .ff-theme-wrapper .portrait-frame {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        margin: 0 0 14px 0;
+        border: 3px solid #ffffff;
+        background: #060a28;
+        box-shadow:
+            inset 0 0 0 1px #6080c0,
+            0 0 0 1px #1a1e4a,
+            3px 3px 0 rgba(0,0,0,0.55);
+        position: relative;
+        overflow: hidden;
+    }
+    .ff-theme-wrapper .portrait-frame img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        image-rendering: auto;
+        transition: opacity 0.18s ease-out;
+    }
+    .ff-theme-wrapper .portrait-state-tag {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 4px 8px;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 9px;
+        letter-spacing: 1.5px;
+        text-align: center;
+        background: rgba(6,10,40,0.85);
+        border-top: 1px solid #4060a0;
+    }
+    .ff-theme-wrapper .portrait-state-ready  { color: #6db44e; }
+    .ff-theme-wrapper .portrait-state-combat { color: #ffcc44; }
+    .ff-theme-wrapper .portrait-state-danger { color: #ff6644; }
+
+    /* ---- Error banner (v0.5.1) ---------------------------------- */
+    .ff-theme-wrapper .ff-error {
+        background: linear-gradient(180deg, #5e1818 0%, #3a0a0a 100%);
+        border: 3px solid #ff6644;
+        box-shadow:
+            inset 0 0 0 1px #ffaa88,
+            0 0 0 1px #2a0606,
+            4px 4px 0 rgba(0,0,0,0.55);
+        color: #ffdddd;
+        padding: 14px 18px;
+        margin-bottom: 18px;
+        font-size: 18px;
+    }
+    .ff-theme-wrapper .ff-error .ff-error-title {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 11px;
+        color: #ff6644;
+        letter-spacing: 1.5px;
+        margin-bottom: 6px;
+        text-shadow: 1px 1px 0 #000;
+    }
 </style>
 
 
@@ -320,7 +385,7 @@
     <header class="tt-header">
         <div class="tt-logo">▶ TONBERRY TACTICS</div>
         <div class="tt-tag">"No gear. No hope. No pants. Just onions."</div>
-        <div class="tt-version">TLF GEAR DIVISION &nbsp;·&nbsp; v0.5.0</div>
+        <div class="tt-version">TLF GEAR DIVISION &nbsp;·&nbsp; v0.5.1</div>
     </header>
 
 
@@ -333,7 +398,7 @@
             <div class="menu-box-body">
                 <p class="hero-instructions">
                     Paste your exported gear string from the in-game plugin
-                    (run <code>/goblin export</code> in chat, then Ctrl+V here).
+                    (run <code>/goblinexport</code> in chat, then Ctrl+V here).
                 </p>
                 <textarea class="ff-textarea"
                           @bind="ExportString"
@@ -344,7 +409,7 @@
                         disabled="@string.IsNullOrWhiteSpace(ExportString)">
                     ⚔ OPTIMIZE
                 </button>
-                @if (OptimizedPlan != null)
+                @if (Optimization != null || ParseError != null)
                 {
                     <button class="ff-button" @onclick="ClearPlan">
                         ✕ CLEAR
@@ -353,6 +418,15 @@
             </div>
         </div>
     </section>
+
+
+    @if (!string.IsNullOrEmpty(ParseError))
+    {
+        <div class="ff-error">
+            <div class="ff-error-title">▶ PARSE ERROR</div>
+            @ParseError
+        </div>
+    }
 
 
     <!-- ============================================================
@@ -367,15 +441,41 @@
             <div class="menu-box">
                 <div class="menu-box-title">▶ ADVENTURER</div>
                 <div class="menu-box-body">
+                    <div class="portrait-frame">
+                        <img src="portraits/@(CurrentPortrait()).jpg"
+                             alt="Adventurer portrait"
+                             loading="lazy" />
+                        <div class="portrait-state-tag @PortraitStateClass()">
+                            @PortraitStateLabel()
+                        </div>
+                    </div>
                     <div class="char-row">
                         <span class="char-label">JOB</span>
-                        <span class="char-value char-value-accent">@ParsedJob</span>
+                        <span class="char-value char-value-accent">
+                            @(ParsedPayload?.Character.JobAbbreviation ?? "—")
+                        </span>
+                    </div>
+                    <div class="char-row">
+                        <span class="char-label">LEVEL</span>
+                        <span class="char-value">
+                            @(ParsedPayload?.Character.Level.ToString() ?? "—")
+                        </span>
+                    </div>
+                    <div class="char-row">
+                        <span class="char-label">ILVL</span>
+                        <span class="char-value">
+                            @(ParsedPayload?.Character.AverageItemLevel.ToString() ?? "—")
+                        </span>
                     </div>
                     <div class="char-row">
                         <span class="char-label">STATUS</span>
-                        @if (OptimizedPlan == null)
+                        @if (Optimization == null && ParseError == null)
                         {
                             <span class="char-value char-value-wait">AWAITING</span>
+                        }
+                        else if (Optimization == null)
+                        {
+                            <span class="char-value char-value-wait">ERROR</span>
                         }
                         else
                         {
@@ -385,7 +485,7 @@
                     <div class="char-row">
                         <span class="char-label">MELDS</span>
                         <span class="char-value">
-                            @(OptimizedPlan?.PlanRecommendations.Count ?? 0)
+                            @(Optimization?.Recommendations.Count ?? 0)
                         </span>
                     </div>
                 </div>
@@ -407,7 +507,7 @@
                                   readonly
                                   rows="3">@GeneratedImportString</textarea>
                         <button class="ff-button"
-                                @onclick="@(() => CopyImportString())">
+                                @onclick="CopyImportString">
                             ⚔ COPY
                         </button>
                         <p class="hint">
@@ -427,7 +527,7 @@
                 <div class="menu-box-title">▶ MATERIA REQUIRED</div>
                 <div class="menu-box-body">
 
-                    @if (OptimizedPlan == null)
+                    @if (Optimization == null)
                     {
                         <div class="empty-state">
                             <div class="empty-icon">📜</div>
@@ -438,21 +538,25 @@
                             </p>
                         </div>
                     }
-                    else if (OptimizedPlan.PlanRecommendations.Count == 0)
+                    else if (Optimization.Recommendations.Count == 0)
                     {
                         <div class="empty-state">
                             <div class="empty-icon">✓</div>
-                            <p>All slots filled — no melds required.</p>
+                            <p>All guaranteed slots filled — no melds required.</p>
                             <p class="muted">
-                                Your gear is fully melded. The Tonberry
-                                approves.
+                                Your gear's empty slots are fully accounted for.
+                                The Tonberry approves.
                             </p>
                         </div>
                     }
                     else
                     {
+                        <p class="muted" style="margin-bottom:14px;">
+                            Mode: <strong>@Optimization.OptimizationMode</strong>
+                            &nbsp;·&nbsp; @Optimization.TotalEmptySlots empty slot(s) filled
+                        </p>
                         <ul class="materia-list">
-                            @foreach (var rec in OptimizedPlan.PlanRecommendations)
+                            @foreach (var rec in Optimization.Recommendations)
                             {
                                 <li class="materia-row">
                                     <span class="knife-cursor"
@@ -485,7 +589,7 @@
                                     </span>
                                     <span class="materia-arrow">←</span>
                                     <span class="materia-meld">
-                                        @rec.Materia.Display()
+                                        @rec.MateriaName
                                     </span>
                                 </li>
                             }
@@ -511,84 +615,103 @@
 
 
 @code {
-    // ── State (preserved per design handoff) ──────────────────────────
-    private string ExportString          = "";
-    private string GeneratedImportString = "";
-    private string ParsedJob             = "WAR";
+    // ── Constants (v0.5.1) ────────────────────────────────────────────
+    private const string EmitterVersion = "0.5.1";
 
-    // ── Mock data structures (preserved verbatim per design handoff) ──
-    // These represent the shape the C# math core will return once
-    // GearGoblin.Core.dll is wired in. DO NOT modify the shape.
-    private class MockPlan
-    {
-        public List<MockRec> PlanRecommendations = new();
-    }
-    private class MockRec
-    {
-        public string PieceName { get; set; }
-        public int SlotIndex    { get; set; }
-        public MockMateria Materia { get; set; }
-    }
-    private class MockMateria
-    {
-        public string Name { get; set; }
-        public string Display() => Name;
-    }
+    // ── Input / output state ──────────────────────────────────────────
+    private string  ExportString          = "";
+    private string  GeneratedImportString = "";
 
-    private MockPlan OptimizedPlan;
+    // ── Parser + optimizer state. ParsedPayload is the real DTO from
+    //    GG-EXPORT:v1: deserialization; Optimization is the result from
+    //    PureMathOptimizer; ParseError surfaces any failure to the UI.
+    private ExportPayloadV1?       ParsedPayload;
+    private PureMathOptimizer.Result? Optimization;
+    private string?                ParseError;
 
-    // ── Stub: mock optimizer. Replace with GearGoblin.Core call. ──────
+    // ── Portrait state machine. ───────────────────────────────────────
+    //    READY    → portrait_danger       (subdued red ring, neutral)
+    //    COMBAT   → portrait_combat       (lightning energy, engaged)
+    //    DANGER   → portrait_danger_alt1  (vivid red, alert)
+    private enum PortraitState { Ready, Combat, Danger }
+    private PortraitState Portrait = PortraitState.Ready;
+
+    private string CurrentPortrait() => Portrait switch
+    {
+        PortraitState.Combat => "portrait_combat",
+        PortraitState.Danger => "portrait_danger_alt1",
+        _                    => "portrait_danger",
+    };
+    private string PortraitStateClass() => Portrait switch
+    {
+        PortraitState.Combat => "portrait-state-combat",
+        PortraitState.Danger => "portrait-state-danger",
+        _                    => "portrait-state-ready",
+    };
+    private string PortraitStateLabel() => Portrait switch
+    {
+        PortraitState.Combat => "▶ ENGAGED",
+        PortraitState.Danger => "▶ WARNING",
+        _                    => "▶ AWAITING",
+    };
+
+    // ── Real optimizer pipeline (v0.5.1) ──────────────────────────────
     private void RunOptimization()
     {
         if (string.IsNullOrWhiteSpace(ExportString)) return;
 
-        OptimizedPlan = new MockPlan();
-        OptimizedPlan.PlanRecommendations.Add(new MockRec
-        {
-            PieceName = "Neo Kingdom Axe",
-            SlotIndex = 0,
-            Materia   = new MockMateria { Name = "Crit XII" }
-        });
-        OptimizedPlan.PlanRecommendations.Add(new MockRec
-        {
-            PieceName = "Neo Kingdom Helm of Maiming",
-            SlotIndex = 0,
-            Materia   = new MockMateria { Name = "Det XII" }
-        });
-        OptimizedPlan.PlanRecommendations.Add(new MockRec
-        {
-            PieceName = "Augmented Credendum Mail of Maiming",
-            SlotIndex = 0,
-            Materia   = new MockMateria { Name = "Crit XII" }
-        });
-        OptimizedPlan.PlanRecommendations.Add(new MockRec
-        {
-            PieceName = "Augmented Credendum Gauntlets of Maiming",
-            SlotIndex = 1,
-            Materia   = new MockMateria { Name = "DH XI" }
-        });
-        OptimizedPlan.PlanRecommendations.Add(new MockRec
-        {
-            PieceName = "Neo Kingdom Earring of Slaying",
-            SlotIndex = 0,
-            Materia   = new MockMateria { Name = "Det XII" }
-        });
+        // Reset state for a fresh run.
+        ParsedPayload         = null;
+        Optimization          = null;
+        ParseError            = null;
+        GeneratedImportString = "";
 
-        GeneratedImportString = "GG-PLAN:eyJtZWxkcyI6WzEsMiwzWX0=";
+        // 1. Parse the GG-EXPORT:v1: string.
+        var parseResult = GearsetParser.TryParse(ExportString);
+        if (!parseResult.Success || parseResult.Payload is null)
+        {
+            ParseError = parseResult.Error ?? "Unknown parse error.";
+            Portrait   = PortraitState.Danger;
+            return;
+        }
+        ParsedPayload = parseResult.Payload;
+
+        // 2. Run the hardcoded GNB Pure-Math optimizer.
+        Optimization = PureMathOptimizer.Optimize(ParsedPayload);
+
+        // 3. Emit the GG-PLAN:v1: round-trip string.
+        GeneratedImportString = PlanSerializer.Serialize(
+            Optimization, ParsedPayload, EmitterVersion);
+
+        // 4. Update portrait — show ENGAGED on success regardless of
+        //    whether we found anything to recommend, since parse worked.
+        Portrait = PortraitState.Combat;
     }
 
     private void ClearPlan()
     {
-        OptimizedPlan          = null;
-        GeneratedImportString  = "";
-        ExportString           = "";
+        ParsedPayload         = null;
+        Optimization          = null;
+        ParseError            = null;
+        GeneratedImportString = "";
+        ExportString          = "";
+        Portrait              = PortraitState.Ready;
     }
 
-    // Clipboard copy delegated to JS interop in the real app; for now
-    // a no-op so the button still wires up cleanly without IJSRuntime.
-    private void CopyImportString()
+    // ── Real clipboard via IJSRuntime (v0.5.1) ────────────────────────
+    private async Task CopyImportString()
     {
-        // TODO: inject IJSRuntime and call:
-        //   await JS.InvokeVoidAsync("navigator.clipboard.writeText", GeneratedImportString);
+        if (string.IsNullOrEmpty(GeneratedImportString)) return;
+        try
+        {
+            await JS.InvokeVoidAsync(
+                "navigator.clipboard.writeText", GeneratedImportString);
+        }
+        catch
+        {
+            // Browsers without clipboard API or denied permission: the
+            // textarea is rendered readonly so the user can still
+            // Ctrl+A / Ctrl+C manually. No UX disaster.
+        }
     }
 }
