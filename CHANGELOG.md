@@ -8,6 +8,53 @@ Tonberry Tactics is the web companion to GearGoblin
 (https://github.com/LastOnionKnight/GearGoblin). Both projects ship together
 when wire-format changes cross the boundary.
 
+## [0.5.3] — 2026-05-12
+
+Hotfix release. v0.5.2 deployed to Cloudflare Pages but the live site hung
+on the Blazor "Loading" spinner because `dotnet publish` was injecting
+unresolved fingerprint templates (`#[.{fingerprint}]`) into the script
+tags in `index.html`. .NET 10's Blazor SDK enables static-asset
+fingerprinting by default, and resolving the templates requires the
+`wasm-tools` workload — which Cloudflare's build environment doesn't
+pre-install. The build log itself flagged this:
+
+> Publishing without optimizations. Although it's optional for Blazor,
+> we strongly recommend using `wasm-tools` workload!
+
+v0.5.1 worked because Cloudflare's build env was running an earlier .NET
+SDK that didn't apply fingerprinting; an SDK upgrade between v0.5.1 and
+v0.5.2 changed the behavior.
+
+### Fixed
+
+- **Blazor WASM startup**: site now loads past the spinner. Two
+  complementary fixes:
+  - `TonberryTactics.csproj` — added
+    `<WasmFingerprintAssets>false</WasmFingerprintAssets>`. Tells the
+    .NET 10 Blazor SDK to skip fingerprint template injection at publish
+    time. Source `index.html` tags pass through unchanged.
+  - `build.sh` — added `dotnet workload install wasm-tools` before
+    `dotnet publish`. Belt-and-suspenders backup: if the csproj property
+    doesn't fully suppress templates for any reason, wasm-tools resolves
+    them to real hashes so the site still ships.
+
+### Notes
+
+- **What we lose**: automatic cache-busting on framework asset hash
+  changes. For a personal beta with one user this is theoretical; we can
+  re-enable fingerprinting in v0.6.x when the site has actual users to
+  worry about cache invalidation for.
+- **What we keep**: everything else. No content changes, no optimizer
+  changes, no wire-format changes. Wallclock from v0.5.2 → v0.5.3 is
+  ~30 minutes plus one Cloudflare rebuild.
+
+### v0.4.6 retro additions
+
+- ".NET 10 SDK enables WasmFingerprintAssets by default, incompatible with Cloudflare Pages build env without wasm-tools workload."
+- "Cloudflare's build environment auto-upgrades .NET SDK versions over time — a build that worked yesterday may fail today on the same source if Microsoft published a new SDK channel patch in between."
+
+[0.5.3]: https://github.com/LastOnionKnight/TonberryTactics/releases/tag/v0.5.3
+
 ## [0.5.2] — 2026-05-12
 
 Docs/version alignment release for **GearGoblin v0.4.5**, which became a
