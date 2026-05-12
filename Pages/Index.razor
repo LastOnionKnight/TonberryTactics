@@ -4,7 +4,12 @@
 @inject IJSRuntime JS
 
 @*
-    Tonberry Tactics v0.5.1 — Index.razor
+    Tonberry Tactics v0.5.2 — Index.razor
+
+    v0.5.2 is a docs/version alignment release for GearGoblin v0.4.5
+    (which became a full CharacterPanelRefined replacement). No
+    optimizer, parser, or wire-format changes — GG-EXPORT:v1: is
+    still consumed unchanged. See CHANGELOG for the full entry.
     -----------------------------------------------------------------
     Retro Final Fantasy (SNES/PS1) UI for the AskMrRobot-style hybrid
     gear optimizer. All CSS is scoped under .ff-theme-wrapper.
@@ -97,6 +102,21 @@
     }
     .ff-theme-wrapper .menu-box-body p:last-child {
         margin-bottom: 0;
+    }
+    /* v0.5.2: accent variant for the Plugin Update callout — amber border
+       and title bar to flag "this is news," not a control. */
+    .ff-theme-wrapper .menu-box-accent {
+        background: linear-gradient(180deg, #2a1f4f 0%, #15082b 100%);
+        border-color: #ffcc44;
+        box-shadow:
+            inset 0 0 0 1px #ffcc44,
+            0 0 0 1px #6a4a0d,
+            4px 4px 0 rgba(0,0,0,0.55);
+    }
+    .ff-theme-wrapper .menu-box-accent .menu-box-title {
+        background: linear-gradient(180deg, #b08820 0%, #6a4a0d 100%);
+        color: #ffeb99;
+        border-bottom-color: #ffcc44;
     }
 
     /* ---- Buttons ------------------------------------------------ */
@@ -385,7 +405,7 @@
     <header class="tt-header">
         <div class="tt-logo">▶ TONBERRY TACTICS</div>
         <div class="tt-tag">"No gear. No hope. No pants. Just onions."</div>
-        <div class="tt-version">TLF GEAR DIVISION &nbsp;·&nbsp; v0.5.1</div>
+        <div class="tt-version">TLF GEAR DIVISION &nbsp;·&nbsp; v0.5.2 &nbsp;·&nbsp; for GearGoblin v0.4.5+</div>
     </header>
 
 
@@ -515,6 +535,26 @@
                             <code>/goblin import</code>.
                         </p>
                     }
+                </div>
+            </div>
+
+            <!-- Plugin update callout (v0.5.2 — GG v0.4.5 alignment) -->
+            <div class="menu-box menu-box-accent">
+                <div class="menu-box-title">▶ PLUGIN UPDATE</div>
+                <div class="menu-box-body">
+                    <p class="muted">
+                        <strong>GearGoblin v0.4.5</strong> — full Character Panel
+                        takeover. Compact derived stats per substat, breakpoint
+                        hints inline, real GCD, role-gated Tenacity / Piety, and
+                        the Materia Advisor — all in one plugin. Replaces
+                        CharacterPanelRefined entirely (auto-detects CPR and
+                        steps aside if both are installed).
+                    </p>
+                    <p class="hint">
+                        Tonberry Tactics consumes the same <code>GG-EXPORT:v1:</code>
+                        wire format; this site is fully compatible with the
+                        update.
+                    </p>
                 </div>
             </div>
 

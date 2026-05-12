@@ -1,16 +1,22 @@
 # Tonberry Tactics
 
-Web companion to [GearGoblin](https://github.com/LastOnionKnight/GearGoblin), the Dalamud BiS planner for Final Fantasy XIV.
+Web companion to [GearGoblin](https://github.com/LastOnionKnight/GearGoblin), the Dalamud plugin that now ships as a full **CharacterPanelRefined replacement** for Final Fantasy XIV (v0.4.5+).
 
 Tonberry Tactics is a Blazor WebAssembly app that consumes the `GG-EXPORT:v1:` strings produced by GearGoblin's `/goblinexport` command, runs an in-browser materia optimizer over the parsed gearset, and emits a `GG-PLAN:v1:` round-trip string that the plugin's planned `/goblinimport` will consume back into a native checklist inside the game's Character window.
 
 **Live site:** https://tonberrytactics.pages.dev
 
-> **Status:** v0.5.1 — first real round-trip release. Mock data is gone; an actual GG-EXPORT parser + hardcoded GNB Pure-Math optimizer + GG-PLAN serializer is wired through end-to-end. Multi-job profiles, stat-cap awareness, and the Balance preset toggle are v0.5.2+ work.
+> **Status:** v0.5.2 — docs/version alignment with GearGoblin v0.4.5. The optimizer, parser, and wire format are unchanged from v0.5.1 (GG-EXPORT:v1: still binary-identical). Landing page now carries a Plugin Update callout describing what v0.4.5 brings to the in-game side. Multi-job profiles, stat-cap awareness, and the Balance preset toggle remain queued for v0.5.3+.
 
-## What it does (v0.5.1)
+## Why pair them
 
-1. You run `/goblinexport` in FFXIV (requires GearGoblin v0.4.1+). A `GG-EXPORT:v1:<base64>` string lands on your clipboard.
+GearGoblin v0.4.5 takes over the native Character window: compact derived stats per substat (Crit chance · damage · DI · breakpoint hint, Det DI, DH chance · DI), real GCD, role-gated Tenacity / Piety rows, and a Materia Advisor section with the top three meld actions. If CharacterPanelRefined is also installed, GG auto-detects it and steps aside on the derived-stat injection to avoid double-display.
+
+Tonberry Tactics is the **web-side optimizer** that pairs with the panel takeover. The plugin shows you what you have and the next-tier hints; this site does the heavier combinatorial materia search outside the game's frame budget, on whatever device you have handy. Round-trip back into the plugin lands as a native checklist (planned for `/goblinimport` in plugin v0.5.0).
+
+## What it does (v0.5.2)
+
+1. You run `/goblinexport` in FFXIV (requires GearGoblin v0.4.1+; v0.4.5+ recommended). A `GG-EXPORT:v1:<base64>` string lands on your clipboard.
 2. You paste that string into the IMPORT FIELD DATA box on tonberrytactics.pages.dev.
 3. Tonberry Tactics:
    - Parses the string (`Services/GearsetParser.cs`).

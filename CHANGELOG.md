@@ -8,6 +8,49 @@ Tonberry Tactics is the web companion to GearGoblin
 (https://github.com/LastOnionKnight/GearGoblin). Both projects ship together
 when wire-format changes cross the boundary.
 
+## [0.5.2] — 2026-05-12
+
+Docs/version alignment release for **GearGoblin v0.4.5**, which became a
+full CharacterPanelRefined replacement. No optimizer, parser, or
+wire-format changes — `GG-EXPORT:v1:` is still consumed unchanged, the
+PureMathOptimizer is bit-for-bit identical to v0.5.1. Site content
+updated to reflect the plugin's expanded role.
+
+### Added
+
+- **Plugin Update sidebar callout** on the landing page (right column,
+  below "Export to Game"). Single amber-bordered box announcing GG
+  v0.4.5: full Character Panel takeover, compact derived stats per
+  substat, breakpoint hints, real GCD, role-gated Tenacity / Piety,
+  Materia Advisor, CPR coexistence. Frames Tonberry Tactics as the
+  web-side optimizer that pairs with the plugin's panel takeover.
+- **Compat tag on the header version pill**: `TLF GEAR DIVISION · v0.5.2
+  · for GearGoblin v0.4.5+`. Lets visitors immediately see plugin
+  compatibility at a glance.
+
+### Changed
+
+- **`TonberryTactics.csproj` description** updated to mention GG v0.4.5
+  compatibility and the CPR-replacement positioning.
+- **`README.md`** rewritten in the "What this does" section to lead with
+  GearGoblin v0.4.5's panel takeover and TT's role as its web-side
+  companion. Compat notes added. Feature roadmap unchanged.
+
+### Notes
+
+- **Wire format unchanged.** GG-EXPORT:v1: produced by GearGoblin v0.4.5
+  is byte-for-byte the same as v0.4.2's — schema versioning earns its
+  keep here. No code path in `Services/GearsetParser.cs` or
+  `Services/PureMathOptimizer.cs` was touched.
+- **Inline `(v0.5.1)` code comments preserved.** Those annotate when
+  individual code sections were written. They're accurate as-is; only
+  the file-header banner and the visible version pill were bumped.
+- **Next code-level update** is queued for v0.5.3 if the Tier XIII
+  materia drop changes recommendation rankings, or v0.6.0 when shared
+  `GearGoblin.Core.dll` lands.
+
+[0.5.2]: https://github.com/LastOnionKnight/TonberryTactics/releases/tag/v0.5.2
+
 ## [0.5.1] — 2026-05-11
 
 First real round-trip release. The v0.5.0 mock optimizer is gone, replaced
