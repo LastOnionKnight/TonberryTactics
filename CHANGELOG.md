@@ -4,9 +4,169 @@ All notable changes to Tonberry Tactics are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning loosely
 follows [Semantic Versioning](https://semver.org/).
 
-Tonberry Tactics is the web companion to GearGoblin
-(https://github.com/LastOnionKnight/GearGoblin). Both projects ship together
-when wire-format changes cross the boundary.
+Tonberry Tactics is the web companion to the in-game plugin (formerly
+"GearGoblin", now also "Tonberry Tactics"). From v0.5.5 onward both halves
+ship at the same version number.
+
+## [0.6.0] — 2026-05-13  "Gear Division"
+
+**Headline:** Full design port from Claude Design's React prototype.
+The site no longer looks like a Blazor app dressed in FF3 paint —
+it _is_ the TLF Gear Division landing page, lockstep with the
+deployed prototype. Header crest, onion-shield TLF stamp, Evercold
+expansion banner, FF dialog-box import section, three-column layout,
+gear grid with materia dots, stat profile with cap bars, Materia
+Advisor with circled-number rec rows, Meld Audit panel, 21-job
+picker, CSS-animated walking Tonberry footer sprite.
+
+Pairs with plugin v0.6.0+. Same version number on both halves from
+this release forward (per the v0.5.5 alignment commitment).
+
+### Added
+
+- **`wwwroot/css/design-v060.css`** (34KB) — full TLF design system
+  ported verbatim from the prototype's `styles.css`. Multi-palette
+  switching scaffold, FF3-style menu boxes, doubled-gold-bevel
+  borders, advisor row chrome, stat-cell capacity bars, severity
+  pips, Tonberry trail animation. `@font-face` for `Eorzea.ttf` with
+  the path adjusted from `assets/Eorzea.ttf` to `../assets/Eorzea.ttf`
+  to resolve correctly from Blazor's `wwwroot/css/` layout.
+
+- **New design assets in `wwwroot/assets/`:**
+  - `onion-helm.png` (533KB) — adventurer-card portrait
+  - `onion-shield.png` (3.9MB) — TLF emblem in the header
+  - `onion-knight-ninja.png` (1.5MB) — reserved (not yet rendered;
+    earmarked for OC card / Easter egg / settings panel)
+  - `rags-pixel.png` (27KB) — walking pixel sprite (footer trail)
+  - `rags-pixel-back.png` (40KB) — back-view sprite (reserved)
+  - `evercold-logo.png` + `evercold-logo-cropped.png` (1.4MB) —
+    expansion logo for the masthead patch-tag
+  - `Eorzea.ttf` (27KB) — decorative Eorzean font for the brand block
+
+- **`<HeadContent>` block in Index.razor** — Google Fonts +
+  `design-v060.css` link injected into the document head from the
+  Razor page, no `wwwroot/index.html` edit required.
+
+### Changed
+
+- **`Pages/Index.razor` — full rewrite.** Replaced 455 lines of inline
+  `<style>` and 336 lines of v0.5.x markup with new structure mirroring
+  the prototype's component tree:
+  - `<header class="masthead">` — crest, brand text, TLF stamp, version
+    pill, expansion logo (5 children, grid layout from design-v060.css)
+  - `<div class="dlg import-dlg">` — FF dialog-box import section with
+    "ADVENTURER" speaker tab and `STEP FORWARD` primary button
+  - `<div class="cols">` — three-column responsive layout:
+    - Left aside: Adventurer card (portrait, name, stats list, credo)
+    - Center main: Gearset, Stat Profile, Materia Advisor, Meld Audit
+    - Right aside: Optimizer controls, Export card, Plugin callout,
+      Feedback panel (restyled), TLF Manifesto
+  - `<div class="tonberry-trail">` — CSS-only walking sprite animation
+  - `<div class="foot">` — standing-ready footer
+
+  C# code-behind logic is unchanged from v0.5.5 — `RunOptimization()`,
+  `ClearPlan()`, `CopyImportString()`, all v0.5.4 Feedback panel
+  methods carry through identically. The optimizer pipeline
+  (GearsetParser → PureMathOptimizer → PlanSerializer) is untouched.
+
+- **`EmitterVersion` and `TtVersion` constants** both bumped from
+  `"0.5.4"`/`"0.5.1"` to `"0.6.0"`. The emitted `GG-PLAN:v1:` plan
+  strings now carry the v0.6.0 generator stamp. Wire format itself
+  (the `v1:` prefix) is unchanged.
+
+### Helpers added to `@code`
+
+- **`BuildStatCells()`** — sums per-stat materia totals from
+  `ParsedPayload.Equipped[].Materia[]` into 6 `StatCell` records
+  (CRT/DH/DET/TEN/SKS/PIE) for the stat profile grid. Cap bars
+  render against a 3140 ceiling. Derived rows (chance %, damage %,
+  DI per point) are stubbed `—` until v0.6.1 lands the Akhmorning
+  formula tables.
+
+- **`SlotGlyph(slot)`** — maps wire-format `Slot` strings
+  (MainHand/Head/Body/etc) to FF-style glyph icons (⚔ ⛑ ☗ ✋ ⌷ ⌒
+  ◊ ⌑ ◯) for the gear-grid slot icons.
+
+- **`MateriaStatClass(statName)`** — maps `CRT`/`DH`/`DET`/`SKS`/
+  `SPS`/`TEN`/`PIE` to the design-v060 CSS classes that color the
+  materia dots per stat.
+
+- **`AllJobs[]`** — 21-tuple list of FFXIV combat jobs by abbr +
+  role, drives the right-rail job-picker grid. `ActiveJob()` resolves
+  to user override → parsed payload → `GNB` default.
+
+- **`JobFullName(abbr)`** — maps job abbreviation to display name
+  (`BRD` → `Bard`, etc.) for the Adventurer card.
+
+- **`CircledNum(n)`** — returns `①`–`⑩` Unicode glyphs for advisor
+  rank badges.
+
+- **`PipelineTagLabel()` / `PipelineTagClass()`** — translate the
+  existing `Portrait` state machine (Ready/Combat/Danger) to the
+  design's pipeline state tags (`AWAITING`/`ENGAGED`/`WARNING`).
+
+- **`AuditEmptyCount()` / `AuditPipClass(n)`** — drive the Meld
+  Audit panel pip severity colors (`ok`/`warn`/`error`) from
+  `Optimization.TotalEmptySlots`.
+
+### Deferred (deliberately, called out so they don't read as broken)
+
+- **Stat profile derived rows** show `—` placeholders. The 6 visual
+  frames are there with materia totals + cap bars, but `CHANCE %`,
+  `DMG %`, and `DI/pt` per substat need the Akhmorning formula
+  tables in C#. Lands v0.6.1.
+
+- **Audit "wrong stat" / "under-tier" / "overcap"** rows show `—`.
+  Detection logic lives in the plugin's Audit tab today; the v0.5.0
+  Core refactor (planned as `GearGoblin.Core` netstandard library)
+  brings full audit parity to the web. Until then, only "empty
+  slots" is derived (from `Optimization.TotalEmptySlots`).
+
+- **21-job picker** is clickable and visually responsive (tile
+  highlights), but the optimizer is still GNB-only. Picking BRD
+  doesn't change recommendations — they remain GNB-priority. Per-job
+  priorities also ship with the Core refactor.
+
+- **Balance preset toggle** is selectable in the optimizer mode
+  segment; the underlying logic is queued for v0.6.1+. Pure-Math is
+  the only active mode.
+
+- **Tonberry Trail animation** is CSS-only (`design-v060.css`
+  drives it). The dev-mode Tweaks panel from the prototype is
+  intentionally NOT ported — it's a design tool, not a production
+  feature.
+
+### Files touched
+
+- `Pages/Index.razor` — full rewrite (1032 lines → ~640 lines, CSS
+  externalized)
+- `TonberryTactics.csproj` — version 0.5.5 → 0.6.0 + new Description
+- `CHANGELOG.md` — this entry
+- `wwwroot/css/design-v060.css` — new (34KB)
+- `wwwroot/assets/onion-helm.png` — new (533KB)
+- `wwwroot/assets/onion-shield.png` — new (3.9MB)
+- `wwwroot/assets/onion-knight-ninja.png` — new (1.5MB)
+- `wwwroot/assets/rags-pixel.png` — new (27KB)
+- `wwwroot/assets/rags-pixel-back.png` — new (40KB)
+- `wwwroot/assets/evercold-logo.png` — new (1MB)
+- `wwwroot/assets/evercold-logo-cropped.png` — new (1.4MB)
+- `wwwroot/assets/Eorzea.ttf` — new (27KB)
+
+### Not changed
+
+- `Models/ExportSchema.cs` — wire-format DTOs untouched. v1 still v1.
+- `Services/GearsetParser.cs` — parsing logic preserved verbatim.
+- `Services/PureMathOptimizer.cs` — optimizer logic preserved
+  verbatim. Still GNB-only; per-job priorities pending v0.5.0 Core.
+- `Services/PlanSerializer.cs` — plan emission preserved verbatim,
+  now stamps `0.6.0` as the emitter version instead of `0.5.1`.
+- `release.ps1` — unchanged.
+- `wwwroot/portraits/*.jpg` — kept around even though Index.razor
+  no longer references them (the design uses `onion-helm.png` for
+  the portrait). Could be cleaned up in a later release if confirmed
+  unused.
+
+---
 
 ## [0.5.5] — 2026-05-13  "Brand Convergence"
 

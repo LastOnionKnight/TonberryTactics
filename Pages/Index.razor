@@ -1,872 +1,680 @@
 @page "/"
 @using TonberryTactics.Models
 @using TonberryTactics.Services
+@using System.Linq
 @inject IJSRuntime JS
 
 @*
-    Tonberry Tactics v0.5.2 — Index.razor
+    Tonberry Tactics v0.6.0 — Index.razor — "Gear Division"
 
-    v0.5.2 is a docs/version alignment release for GearGoblin v0.4.5
-    (which became a full CharacterPanelRefined replacement). No
-    optimizer, parser, or wire-format changes — GG-EXPORT:v1: is
-    still consumed unchanged. See CHANGELOG for the full entry.
-    -----------------------------------------------------------------
-    Retro Final Fantasy (SNES/PS1) UI for the AskMrRobot-style hybrid
-    gear optimizer. All CSS is scoped under .ff-theme-wrapper.
+    Full design port from Claude Design's React prototype. Every visible
+    component (Header, Import dialog, Adventurer card, Gear grid, Stat
+    profile, Materia Advisor, Audit, Optimizer controls, Export card,
+    Plugin callout, Feedback, Manifesto, Tonberry trail, Footer) mirrors
+    the JSX in app.jsx / chrome.jsx / gear.jsx / advisor.jsx.
 
-    v0.5.1 wires the mock optimizer to a real GG-EXPORT:v1: parser,
-    a hardcoded GNB Pure-Math optimizer, and a GG-PLAN:v1: serializer.
-    Portrait icons (wwwroot/portraits/*.jpg) now switch with state.
+    Visual styling is fully external — see wwwroot/css/design-v060.css
+    (34KB, ported verbatim from the prototype with the Eorzea @font-face
+    path adjusted for Blazor's wwwroot layout).
 
-    The knife cursor is inline SVG (no external image asset required).
-    If/when /images/tonberry-knife.png exists, swap the <svg> inside
-    .knife-cursor for an <img> — animation continues to work.
+    C# code-behind preserved from v0.5.5:
+      GearsetParser.TryParse → PureMathOptimizer.Optimize → PlanSerializer.Serialize
+      Portrait state machine (Ready/Combat/Danger) drives the .state-tag
+
+    Things deliberately deferred to v0.6.1+ (called out so they don't
+    masquerade as broken):
+      - StatProfile derived rows are "—" (Akhmorning tables ship v0.6.1)
+      - Audit wrong-stat / under-tier / overcap rows show "—"
+        (full audit logic lives in plugin; web parity via Core refactor)
+      - 21-job picker is clickable but the optimizer is still GNB-only
+      - Balance preset is queued (Pure-Math is the only active mode)
+      - The dev-mode Tweaks panel from the prototype is NOT ported
 *@
 
-<style>
-    /* === Tonberry Tactics — Retro FF UI =========================== */
-    /* All styling scoped inside .ff-theme-wrapper.                  */
+<HeadContent>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/design-v060.css">
+</HeadContent>
 
-    @@import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap');
+<div class="shell">
 
-    .ff-theme-wrapper {
-        font-family: 'VT323', 'Courier New', monospace;
-        font-size: 22px;
-        line-height: 1.25;
-        color: #ffffff;
-        background:
-            radial-gradient(ellipse at 20% 10%, rgba(64,96,192,0.18), transparent 55%),
-            radial-gradient(ellipse at 85% 95%, rgba(109,180,78,0.10), transparent 55%),
-            linear-gradient(180deg, #060a28 0%, #14184c 50%, #060a28 100%);
-        min-height: 100vh;
-        padding: 28px 22px 48px;
-        letter-spacing: 0.5px;
-    }
-    .ff-theme-wrapper * { box-sizing: border-box; }
-    .ff-theme-wrapper a { color: #ffcc44; text-decoration: none; }
-
-    /* ---- Header / masthead -------------------------------------- */
-    .ff-theme-wrapper .tt-header {
-        text-align: center;
-        margin-bottom: 26px;
-        padding-bottom: 18px;
-        border-bottom: 2px solid #4060a0;
-    }
-    /* v0.5.5: brand row — circle logo + wordmark side by side */
-    .ff-theme-wrapper .tt-brand {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 22px;
-        margin-bottom: 12px;
-    }
-    .ff-theme-wrapper .tt-brandmark {
-        width: 96px;
-        height: 96px;
-        object-fit: contain;
-        image-rendering: pixelated;
-        filter: drop-shadow(3px 3px 0 #663300) drop-shadow(0 0 12px rgba(255, 204, 68, 0.25));
-        flex-shrink: 0;
-    }
-    .ff-theme-wrapper .tt-brand-text {
-        text-align: left;
-    }
-    .ff-theme-wrapper .tt-logo {
-        font-family: 'Press Start 2P', 'Courier New', monospace;
-        font-size: 26px;
-        color: #ffcc44;
-        text-shadow: 3px 3px 0 #663300, 6px 6px 0 rgba(0,0,0,0.55);
-        letter-spacing: 3px;
-        margin-bottom: 8px;
-    }
-    .ff-theme-wrapper .tt-tag {
-        font-size: 18px;
-        color: #c0d0ff;
-        font-style: italic;
-    }
-    .ff-theme-wrapper .tt-version {
-        font-size: 13px;
-        color: #6080c0;
-        letter-spacing: 2px;
-        font-family: 'Press Start 2P', monospace;
-    }
-
-    /* ---- Menu Box (classic FF window) --------------------------- */
-    .ff-theme-wrapper .menu-box {
-        background: linear-gradient(180deg, #181c5e 0%, #0a0e3a 100%);
-        border: 3px solid #ffffff;
-        border-radius: 0;
-        box-shadow:
-            inset 0 0 0 1px #6080c0,
-            0 0 0 1px #1a1e4a,
-            4px 4px 0 rgba(0,0,0,0.55);
-        margin-bottom: 18px;
-    }
-    .ff-theme-wrapper .menu-box-title {
-        background: linear-gradient(180deg, #2040a0 0%, #102078 100%);
-        color: #ffcc44;
-        font-family: 'Press Start 2P', monospace;
-        font-size: 12px;
-        padding: 9px 14px;
-        border-bottom: 2px solid #ffffff;
-        letter-spacing: 1.5px;
-        text-shadow: 1px 1px 0 #000000;
-    }
-    .ff-theme-wrapper .menu-box-body {
-        padding: 16px 18px 18px;
-    }
-    .ff-theme-wrapper .menu-box-body p {
-        margin: 0 0 10px 0;
-    }
-    .ff-theme-wrapper .menu-box-body p:last-child {
-        margin-bottom: 0;
-    }
-    /* v0.5.2: accent variant for the Plugin Update callout — amber border
-       and title bar to flag "this is news," not a control. */
-    .ff-theme-wrapper .menu-box-accent {
-        background: linear-gradient(180deg, #2a1f4f 0%, #15082b 100%);
-        border-color: #ffcc44;
-        box-shadow:
-            inset 0 0 0 1px #ffcc44,
-            0 0 0 1px #6a4a0d,
-            4px 4px 0 rgba(0,0,0,0.55);
-    }
-    .ff-theme-wrapper .menu-box-accent .menu-box-title {
-        background: linear-gradient(180deg, #b08820 0%, #6a4a0d 100%);
-        color: #ffeb99;
-        border-bottom-color: #ffcc44;
-    }
-
-    /* ---- Buttons ------------------------------------------------ */
-    .ff-theme-wrapper .ff-button {
-        background: linear-gradient(180deg, #4060c0 0%, #1f3690 100%);
-        border: 2px solid #ffffff;
-        border-radius: 0;
-        color: #ffffff;
-        font-family: 'Press Start 2P', monospace;
-        font-size: 11px;
-        padding: 9px 16px;
-        cursor: pointer;
-        letter-spacing: 1.5px;
-        text-shadow: 1px 1px 0 #000000;
-        box-shadow:
-            inset 0 0 0 1px #80a0ff,
-            2px 2px 0 rgba(0,0,0,0.55);
-        transition: filter 0.1s ease;
-        margin: 4px 6px 4px 0;
-    }
-    .ff-theme-wrapper .ff-button:hover { filter: brightness(1.18); }
-    .ff-theme-wrapper .ff-button:active {
-        transform: translate(2px, 2px);
-        box-shadow: inset 0 0 0 1px #80a0ff;
-    }
-    .ff-theme-wrapper .ff-button-primary {
-        background: linear-gradient(180deg, #d8b042 0%, #8e6418 100%);
-        border-color: #ffcc44;
-        box-shadow:
-            inset 0 0 0 1px #ffd866,
-            2px 2px 0 rgba(0,0,0,0.55);
-    }
-    .ff-theme-wrapper .ff-button[disabled] {
-        opacity: 0.45;
-        cursor: not-allowed;
-        filter: grayscale(0.6);
-    }
-
-    /* ---- Textarea / inputs ------------------------------------- */
-    .ff-theme-wrapper .ff-textarea {
-        width: 100%;
-        background: #00001e;
-        border: 2px solid #4060a0;
-        color: #ffffff;
-        font-family: 'VT323', monospace;
-        font-size: 18px;
-        padding: 8px 10px;
-        resize: vertical;
-        margin-bottom: 10px;
-        letter-spacing: 0.5px;
-    }
-    .ff-theme-wrapper .ff-textarea:focus {
-        outline: none;
-        border-color: #80a0ff;
-        box-shadow: 0 0 0 1px #ffcc44;
-    }
-    .ff-theme-wrapper .ff-readonly {
-        background: #00000f;
-        border-color: #303060;
-        color: #ffcc44;
-    }
-
-    /* ---- Inline code -------------------------------------------- */
-    .ff-theme-wrapper code {
-        background: #00001e;
-        color: #ffcc44;
-        padding: 1px 7px;
-        font-family: 'VT323', monospace;
-        font-size: 18px;
-        border: 1px solid #4060a0;
-    }
-
-    /* ---- Layout grid -------------------------------------------- */
-    .ff-theme-wrapper .hero { margin-bottom: 20px; }
-    .ff-theme-wrapper .hero-instructions {
-        color: #c0d0ff;
-        font-size: 18px;
-    }
-    .ff-theme-wrapper .content-grid {
-        display: grid;
-        grid-template-columns: 320px 1fr;
-        gap: 20px;
-    }
-    @@media (max-width: 900px) {
-        .ff-theme-wrapper .content-grid { grid-template-columns: 1fr; }
-    }
-
-    /* ---- Sidebar: Adventurer block ------------------------------ */
-    .ff-theme-wrapper .char-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        padding: 5px 0;
-        border-bottom: 1px dashed #303068;
-    }
-    .ff-theme-wrapper .char-row:last-child { border-bottom: none; }
-    .ff-theme-wrapper .char-label {
-        color: #8090c0;
-        font-size: 16px;
-        letter-spacing: 2px;
-        font-family: 'Press Start 2P', monospace;
-    }
-    .ff-theme-wrapper .char-value {
-        color: #ffffff;
-        font-size: 22px;
-    }
-    .ff-theme-wrapper .char-value-good   { color: #6db44e; }
-    .ff-theme-wrapper .char-value-wait   { color: #c0d0ff; }
-    .ff-theme-wrapper .char-value-accent { color: #ffcc44; }
-
-    /* ---- Materia list ------------------------------------------- */
-    .ff-theme-wrapper .materia-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-    }
-    .ff-theme-wrapper .materia-row {
-        display: flex;
-        align-items: center;
-        padding: 7px 8px;
-        border-bottom: 1px solid #1a2456;
-        font-size: 22px;
-    }
-    .ff-theme-wrapper .materia-row:last-child { border-bottom: none; }
-    .ff-theme-wrapper .materia-row:hover {
-        background: rgba(64,96,192,0.15);
-    }
-    .ff-theme-wrapper .materia-piece {
-        flex: 1;
-        color: #ffffff;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .ff-theme-wrapper .materia-slot {
-        color: #8090c0;
-        margin-right: 14px;
-        min-width: 36px;
-        text-align: right;
-        font-family: 'VT323', monospace;
-    }
-    .ff-theme-wrapper .materia-arrow {
-        color: #6080c0;
-        margin-right: 10px;
-    }
-    .ff-theme-wrapper .materia-meld {
-        color: #ffcc44;
-        min-width: 110px;
-        text-align: right;
-    }
-
-    /* ---- The Tonberry Knife Cursor ------------------------------ */
-    /* Inline SVG knife with a "stab" animation. Pixelated rendering
-       so it slots into the retro aesthetic without anti-aliasing. */
-    .ff-theme-wrapper .knife-cursor {
-        display: inline-block;
-        width: 32px;
-        height: 16px;
-        margin-right: 10px;
-        flex-shrink: 0;
-        animation: stab 0.85s ease-in-out infinite;
-    }
-    .ff-theme-wrapper .knife-cursor svg {
-        width: 100%;
-        height: 100%;
-        display: block;
-        image-rendering: pixelated;
-        filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.7));
-    }
-    @@keyframes stab {
-        0%, 55%, 100% { transform: translateX(0); }
-        65%           { transform: translateX(9px); }
-        75%           { transform: translateX(6px); }
-        85%           { transform: translateX(2px); }
-    }
-
-    /* ---- Empty state -------------------------------------------- */
-    .ff-theme-wrapper .empty-state {
-        text-align: center;
-        padding: 36px 16px;
-        color: #8090c0;
-    }
-    .ff-theme-wrapper .empty-state .empty-icon {
-        font-size: 44px;
-        margin-bottom: 14px;
-        opacity: 0.7;
-    }
-    .ff-theme-wrapper .empty-state p {
-        margin: 4px 0;
-        font-size: 20px;
-    }
-    .ff-theme-wrapper .muted { color: #6080c0; font-size: 18px; }
-    .ff-theme-wrapper .hint  {
-        font-size: 16px;
-        color: #6080c0;
-        margin-top: 8px;
-        font-style: italic;
-    }
-
-    /* ---- Footer ------------------------------------------------- */
-    .ff-theme-wrapper .tt-footer {
-        text-align: center;
-        margin-top: 40px;
-        padding-top: 20px;
-        border-top: 2px solid #4060a0;
-        color: #6080c0;
-        font-size: 16px;
-        font-style: italic;
-        line-height: 1.6;
-    }
-    .ff-theme-wrapper .tt-footer .tlf-mark {
-        color: #6db44e;
-        font-style: normal;
-        letter-spacing: 2px;
-        font-family: 'Press Start 2P', monospace;
-        font-size: 11px;
-    }
-    /* ---- Adventurer portrait (v0.5.1) --------------------------- */
-    .ff-theme-wrapper .portrait-frame {
-        width: 100%;
-        aspect-ratio: 1 / 1;
-        margin: 0 0 14px 0;
-        border: 3px solid #ffffff;
-        background: #060a28;
-        box-shadow:
-            inset 0 0 0 1px #6080c0,
-            0 0 0 1px #1a1e4a,
-            3px 3px 0 rgba(0,0,0,0.55);
-        position: relative;
-        overflow: hidden;
-    }
-    .ff-theme-wrapper .portrait-frame img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        image-rendering: auto;
-        transition: opacity 0.18s ease-out;
-    }
-    .ff-theme-wrapper .portrait-state-tag {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        padding: 4px 8px;
-        font-family: 'Press Start 2P', monospace;
-        font-size: 9px;
-        letter-spacing: 1.5px;
-        text-align: center;
-        background: rgba(6,10,40,0.85);
-        border-top: 1px solid #4060a0;
-    }
-    .ff-theme-wrapper .portrait-state-ready  { color: #6db44e; }
-    .ff-theme-wrapper .portrait-state-combat { color: #ffcc44; }
-    .ff-theme-wrapper .portrait-state-danger { color: #ff6644; }
-
-    /* ---- Error banner (v0.5.1) ---------------------------------- */
-    .ff-theme-wrapper .ff-error {
-        background: linear-gradient(180deg, #5e1818 0%, #3a0a0a 100%);
-        border: 3px solid #ff6644;
-        box-shadow:
-            inset 0 0 0 1px #ffaa88,
-            0 0 0 1px #2a0606,
-            4px 4px 0 rgba(0,0,0,0.55);
-        color: #ffdddd;
-        padding: 14px 18px;
-        margin-bottom: 18px;
-        font-size: 18px;
-    }
-    .ff-theme-wrapper .ff-error .ff-error-title {
-        font-family: 'Press Start 2P', monospace;
-        font-size: 11px;
-        color: #ff6644;
-        letter-spacing: 1.5px;
-        margin-bottom: 6px;
-        text-shadow: 1px 1px 0 #000;
-    }
-    /* === v0.5.4 Feedback panel ====================================== */
-    .ff-theme-wrapper .fb-row {
-        margin-top: 14px;
-    }
-    .ff-theme-wrapper .fb-label {
-        display: block;
-        font-family: 'Press Start 2P', monospace;
-        font-size: 9px;
-        letter-spacing: 1.2px;
-        color: #c2c5d8;
-        margin-bottom: 6px;
-        text-transform: uppercase;
-    }
-    .ff-theme-wrapper .fb-radio-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 14px;
-    }
-    .ff-theme-wrapper .fb-radio {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        font-size: 18px;
-        color: #e8e6d5;
-        user-select: none;
-    }
-    .ff-theme-wrapper .fb-radio input[type="radio"] {
-        accent-color: #f5b95d;     /* lantern */
-        margin: 0;
-    }
-    .ff-theme-wrapper .fb-checkbox {
-        display: inline-flex;
-        align-items: flex-start;
-        gap: 8px;
-        cursor: pointer;
-        font-size: 17px;
-        color: #c2c5d8;
-        user-select: none;
-        line-height: 1.35;
-    }
-    .ff-theme-wrapper .fb-checkbox input[type="checkbox"] {
-        accent-color: #f5b95d;     /* lantern */
-        margin-top: 4px;           /* align with first text line */
-    }
-    .ff-theme-wrapper .fb-buttons {
-        margin-top: 16px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-    .ff-theme-wrapper .fb-buttons .ff-button:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-    }
-    .ff-theme-wrapper .fb-status {
-        margin-top: 12px;
-        padding: 8px 10px;
-        background: rgba(109, 180, 78, 0.10);   /* ship green tint */
-        border-left: 3px solid #6db44e;
-        color: #8dc880;
-        font-size: 17px;
-        line-height: 1.4;
-    }
-
-</style>
-
-
-<div class="ff-theme-wrapper">
-
-    <!-- ============================================================
-         HEADER
-         ============================================================ -->
-    <header class="tt-header">
-        <div class="tt-brand">
-            <img src="assets/circle-logo.png" alt="Tonberry Tactics" class="tt-brandmark" />
-            <div class="tt-brand-text">
-                <div class="tt-logo">TONBERRY TACTICS</div>
-                <div class="tt-tag">"No gear. No hope. No pants. Just onions."</div>
+    @* ═══════════════════════════════════════════════════════════════ *@
+    @*  HEADER — masthead with crest, brand, TLF stamp, version, expac *@
+    @* ═══════════════════════════════════════════════════════════════ *@
+    <header class="masthead">
+        <div class="crest">
+            <img src="assets/circle-logo.png" alt="Tonberry Liberation Front"/>
+        </div>
+        <div>
+            <div class="brand-eyebrow">Tonberry Liberation Front · Gear Division</div>
+            <h1 class="brand-title">TONBERRY TACTICS</h1>
+            <div class="brand-sub">"No gear. No hope. No pants. Just onions."</div>
+            <div class="brand-eorzea" title="Eorzean: Onion of the TLF">
+                ONION · OF · THE · TLF
             </div>
         </div>
-        <div class="tt-version">TLF GEAR DIVISION &nbsp;·&nbsp; v0.5.5</div>
+        <div class="tlf-stamp">
+            <img src="assets/onion-shield.png" alt="TLF crest"/>
+        </div>
+        <div class="version-pill">
+            <div class="v">v 0.6.0</div>
+            <div class="compat">paired with plugin v0.6.0+</div>
+        </div>
+        <div class="expansion-logo">
+            <img src="assets/evercold-logo-cropped.png" alt="Final Fantasy XIV: Evercold"/>
+            <div class="patch-tag">
+                <span class="dot"></span>
+                <span>Patch 7.5 · Expansion live</span>
+            </div>
+        </div>
     </header>
 
-
-    <!-- ============================================================
-         HERO — paste export string
-         ============================================================ -->
-    <section class="hero">
-        <div class="menu-box">
-            <div class="menu-box-title">▶ IMPORT FIELD DATA</div>
-            <div class="menu-box-body">
-                <p class="hero-instructions">
-                    Paste your exported gear string from the in-game plugin
-                    (run <code>/goblinexport</code> in chat, then Ctrl+V here).
-                </p>
-                <textarea class="ff-textarea"
-                          @bind="ExportString"
-                          placeholder="GG-EXPORT:..."
-                          rows="3"></textarea>
-                <button class="ff-button ff-button-primary"
-                        @onclick="RunOptimization"
-                        disabled="@string.IsNullOrWhiteSpace(ExportString)">
-                    ⚔ OPTIMIZE
-                </button>
-                @if (Optimization != null || ParseError != null)
-                {
-                    <button class="ff-button" @onclick="ClearPlan">
-                        ✕ CLEAR
-                    </button>
-                }
+    @* ═══════════════════════════════════════════════════════════════ *@
+    @*  IMPORT SECTION — FF dialog box                                  *@
+    @* ═══════════════════════════════════════════════════════════════ *@
+    <div class="dlg import-dlg">
+        <span class="speaker">ADVENTURER</span>
+        <div class="prompt-line">
+            <span class="em">Step forward.</span>
+            Paste the <code class="inline">GG-EXPORT:v1:</code> string from
+            <span class="em">/ttexport</span> to begin the audit.
+        </div>
+        <div class="import-row">
+            <textarea class="import-textarea"
+                      @bind="ExportString"
+                      @bind:event="oninput"
+                      placeholder="GG-EXPORT:v1:eyJwbHVnaW4iOiJUb25iZXJyeVRhY3RpY3MiLi4u"></textarea>
+            <button class="step-fwd" @onclick="RunOptimization">
+                <span>STEP FORWARD</span>
+                <span class="kanji">— stab once, stab true —</span>
+            </button>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-family:var(--f-mono); font-size:11px; color:var(--frost-dim);">
+            @if (ParsedPayload != null)
+            {
+                <span class="pill ship">
+                    parsed · @ParsedPayload.Character.JobAbbreviation ·
+                    iLvl @ParsedPayload.Character.AverageItemLevel ·
+                    @ParsedPayload.Equipped.Count pieces ·
+                    @TotalMateriaCount() melds
+                </span>
+            }
+            else if (!string.IsNullOrWhiteSpace(ParseError))
+            {
+                <span class="pill error">parse failed</span>
+            }
+            else
+            {
+                <span class="pill ice">awaiting export</span>
+            }
+            <span style="flex:1"></span>
+            <button class="btn ghost" @onclick="ClearPlan">CLEAR</button>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(ParseError))
+        {
+            <div style="margin-top:10px; padding:10px 12px; border:1px solid var(--blood); background:rgba(210,69,69,0.05); font-family:var(--f-mono); font-size:12px; color:var(--blood-bright);">
+                @ParseError
             </div>
-        </div>
-    </section>
+        }
+    </div>
 
+    @* ═══════════════════════════════════════════════════════════════ *@
+    @*  THREE-COLUMN LAYOUT                                             *@
+    @* ═══════════════════════════════════════════════════════════════ *@
+    <div class="cols">
 
-    @if (!string.IsNullOrEmpty(ParseError))
-    {
-        <div class="ff-error">
-            <div class="ff-error-title">▶ PARSE ERROR</div>
-            @ParseError
-        </div>
-    }
-
-
-    <!-- ============================================================
-         TWO-COLUMN: Sidebar + Materia main
-         ============================================================ -->
-    <div class="content-grid">
-
-        <!-- ---- SIDEBAR ---- -->
+        @* ─── LEFT — ADVENTURER CARD ──────────────────────────────── *@
         <aside>
+            <div class="menu">
+                <div class="menu-head">
+                    <span class="glyph">◆</span>
+                    <span>Adventurer</span>
+                    <span class="spacer"></span>
+                    <span class="badge">bound</span>
+                </div>
+                <div class="menu-body">
+                    <div class="adv-portrait">
+                        <img src="assets/onion-helm.png" alt="Onion Knight portrait"
+                             style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                        <div class="ring-anim"></div>
+                        <div class="state-tag @PipelineTagClass()">◆ @PipelineTagLabel() ◆</div>
+                    </div>
 
-            <!-- Adventurer status -->
-            <div class="menu-box">
-                <div class="menu-box-title">▶ ADVENTURER</div>
-                <div class="menu-box-body">
-                    <div class="portrait-frame">
-                        <img src="portraits/@(CurrentPortrait()).jpg"
-                             alt="Adventurer portrait"
-                             loading="lazy" />
-                        <div class="portrait-state-tag @PortraitStateClass()">
-                            @PortraitStateLabel()
-                        </div>
+                    <h3 class="adv-name">@AdvDisplayName()</h3>
+                    <div class="adv-title-line">Onion Knight of the TLF</div>
+
+                    <ul class="adv-stats">
+                        <li>
+                            <span class="k">Job</span>
+                            <span class="v">@AdvJob()</span>
+                            <span style="color:var(--frost-dim); font-size:11px; font-family:var(--f-mono);">@AdvJobName()</span>
+                        </li>
+                        <li><span class="k">Level</span> <span class="v">@AdvLevel()</span></li>
+                        <li><span class="k">Avg iLvl</span> <span class="v">@AdvIlvl()</span></li>
+                        <li>
+                            <span class="k">Melds</span>
+                            <span class="v">
+                                @if (Optimization != null)
+                                {
+                                    <span style="color:var(--ship-bright)">+@TotalMateriaCount() queued</span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--frost-dim)">—</span>
+                                }
+                            </span>
+                        </li>
+                        <li>
+                            <span class="k">Status</span>
+                            <span class="v"><span class="pill ship">@PipelineTagLabel()</span></span>
+                        </li>
+                    </ul>
+
+                    <div class="credo">
+                        ◆<br/>
+                        "Stab once. Stab true.<br/>
+                        The lantern guides, the knife decides."
+                        <span class="dash">— TLF CREDO —</span>
                     </div>
-                    <div class="char-row">
-                        <span class="char-label">JOB</span>
-                        <span class="char-value char-value-accent">
-                            @(ParsedPayload?.Character.JobAbbreviation ?? "—")
-                        </span>
+                </div>
+            </div>
+        </aside>
+
+        @* ─── CENTER — GEAR / STATS / ADVISOR / AUDIT ─────────────── *@
+        <main>
+            <div class="stack-loose">
+
+                @* GEARSET *@
+                <div class="menu no-pad">
+                    <div class="menu-head">
+                        <span class="glyph">◆</span>
+                        <span>Gearset</span>
+                        <span class="spacer"></span>
+                        <span class="pill ice">@GearSetLabel()</span>
+                        <span class="badge">@GearSlotCount() / 13</span>
                     </div>
-                    <div class="char-row">
-                        <span class="char-label">LEVEL</span>
-                        <span class="char-value">
-                            @(ParsedPayload?.Character.Level.ToString() ?? "—")
-                        </span>
-                    </div>
-                    <div class="char-row">
-                        <span class="char-label">ILVL</span>
-                        <span class="char-value">
-                            @(ParsedPayload?.Character.AverageItemLevel.ToString() ?? "—")
-                        </span>
-                    </div>
-                    <div class="char-row">
-                        <span class="char-label">STATUS</span>
-                        @if (Optimization == null && ParseError == null)
+                    <div class="menu-body">
+                        @if (ParsedPayload?.Equipped is { Count: > 0 } pieces)
                         {
-                            <span class="char-value char-value-wait">AWAITING</span>
-                        }
-                        else if (Optimization == null)
-                        {
-                            <span class="char-value char-value-wait">ERROR</span>
+                            <div class="gear-grid" style="padding:0; padding-top:4px;">
+                                @foreach (var piece in pieces)
+                                {
+                                    <div class="gear-slot">
+                                        <div class="gear-icon">
+                                            <span class="glyph">@SlotGlyph(piece.Slot)</span>
+                                            @if (piece.ItemLevel > 0)
+                                            {
+                                                <span class="ilvl-tag">i@(piece.ItemLevel)</span>
+                                            }
+                                        </div>
+                                        <div class="gear-meta">
+                                            <div class="gear-slot-name">@piece.Slot.ToUpper()</div>
+                                            <div class="gear-item-name @(piece.IsHighQuality ? "hq" : "")">
+                                                @(string.IsNullOrEmpty(piece.Name) ? "—" : piece.Name)
+                                            </div>
+                                            <div class="materia-dots">
+                                                @foreach (var m in piece.Materia ?? new List<ExportMateriaV1>())
+                                                {
+                                                    <span class="mat-dot @MateriaStatClass(m.StatName)"
+                                                          title="@m.StatName +@m.StatValue (slot @m.SlotIndex)"></span>
+                                                }
+                                                @for (int i = (piece.Materia?.Count ?? 0); i < piece.MateriaSlotCount; i++)
+                                                {
+                                                    <span class="mat-dot empty rec" title="empty (recommended fill)"></span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 16px; border-top:1px dashed var(--bd-pixel-lite); font-family:var(--f-mono); font-size:11px; color:var(--frost-dim);">
+                                <span>Hover a slot to inspect</span>
+                                <span>
+                                    <span class="pill ship" style="margin-right:6px">melded · @TotalMateriaCount()</span>
+                                    <span class="pill warn">empty · @(Optimization?.TotalEmptySlots ?? 0)</span>
+                                </span>
+                            </div>
                         }
                         else
                         {
-                            <span class="char-value char-value-good">READY</span>
+                            <div style="padding:32px 24px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--frost-dim); font-size:14px;">
+                                The lantern waits. Paste your gear export above to fill this grid.
+                            </div>
                         }
                     </div>
-                    <div class="char-row">
-                        <span class="char-label">MELDS</span>
-                        <span class="char-value">
-                            @(Optimization?.Recommendations.Count ?? 0)
-                        </span>
+                </div>
+
+                @* STAT PROFILE *@
+                <div class="menu">
+                    <div class="menu-head">
+                        <span class="glyph">◇</span>
+                        <span>Stat Profile</span>
+                        <span class="spacer"></span>
+                        <span class="pill gold">@StatProfileBadge()</span>
                     </div>
-                </div>
-            </div>
-
-            <!-- Output string for re-import -->
-            <div class="menu-box">
-                <div class="menu-box-title">▶ EXPORT TO GAME</div>
-                <div class="menu-box-body">
-                    @if (string.IsNullOrEmpty(GeneratedImportString))
-                    {
-                        <p class="muted">
-                            Run the optimizer to generate an import string.
-                        </p>
-                    }
-                    else
-                    {
-                        <textarea class="ff-textarea ff-readonly"
-                                  readonly
-                                  rows="3">@GeneratedImportString</textarea>
-                        <button class="ff-button"
-                                @onclick="CopyImportString">
-                            ⚔ COPY
-                        </button>
-                        <p class="hint">
-                            Paste into the in-game plugin via
-                            <code>/goblin import</code>.
-                        </p>
-                    }
-                </div>
-            </div>
-
-            <!-- Plugin update callout (v0.5.2 — GG v0.4.5 alignment) -->
-            <div class="menu-box menu-box-accent">
-                <div class="menu-box-title">▶ PLUGIN UPDATE</div>
-                <div class="menu-box-body">
-                    <p class="muted">
-                        <strong>GearGoblin v0.4.5</strong> — full Character Panel
-                        takeover. Compact derived stats per substat, breakpoint
-                        hints inline, real GCD, role-gated Tenacity / Piety, and
-                        the Materia Advisor — all in one plugin. Replaces
-                        CharacterPanelRefined entirely (auto-detects CPR and
-                        steps aside if both are installed).
-                    </p>
-                    <p class="hint">
-                        Tonberry Tactics consumes the same <code>GG-EXPORT:v1:</code>
-                        wire format; this site is fully compatible with the
-                        update.
-                    </p>
-                </div>
-            </div>
-
-            <!-- v0.5.4 Feedback panel.
-                 Mirrors the plugin's Feedback tab (GearGoblin v0.4.7+):
-                 pre-filled GitHub issue URL + clipboard fallback for Discord/DM,
-                 with browser/version diagnostic auto-attached. No backend.
-                 No analytics, no telemetry — explicit click only. -->
-            <div class="menu-box">
-                <div class="menu-box-title">▶ FEEDBACK</div>
-                <div class="menu-box-body">
-                    <p class="muted">
-                        Tonberry Tactics is in beta. Tell Refia what's working
-                        and what isn't — bugs, optimizer disagreements, UI
-                        confusion, or anything else.
-                    </p>
-
-                    <div class="fb-row">
-                        <label class="fb-label">CATEGORY</label>
-                        <div class="fb-radio-row">
-                            @foreach (var (label, idx) in FeedbackCategories.Select((l, i) => (l, i)))
+                    <div class="menu-body">
+                        <div class="stat-grid">
+                            @foreach (var s in BuildStatCells())
                             {
-                                <label class="fb-radio">
-                                    <input type="radio"
-                                           name="fb-cat"
-                                           value="@idx"
-                                           checked="@(FeedbackCategory == idx)"
-                                           @onchange="@(() => FeedbackCategory = idx)" />
-                                    <span>@label</span>
-                                </label>
+                                <div class="stat-cell">
+                                    <div class="stat-name">@s.Name</div>
+                                    <div class="stat-val">@s.Value</div>
+                                    <div class="stat-deriv">
+                                        <span><b>—</b> v0.6.1+</span>
+                                    </div>
+                                    <div class="stat-cap-bar">
+                                        <div class="fill" style="width:@(s.PercentOfCap)%"></div>
+                                    </div>
+                                    <div class="cap-line">
+                                        <span>+@s.MateriaTotal materia</span>
+                                        <span>CAP 3,140</span>
+                                    </div>
+                                </div>
                             }
                         </div>
-                    </div>
-
-                    <div class="fb-row">
-                        <label class="fb-label">MESSAGE</label>
-                        <textarea class="ff-textarea"
-                                  rows="4"
-                                  maxlength="4000"
-                                  placeholder="What happened, what you expected, what you saw..."
-                                  @bind="FeedbackText"
-                                  @bind:event="oninput"></textarea>
-                    </div>
-
-                    <div class="fb-row">
-                        <label class="fb-checkbox">
-                            <input type="checkbox" @bind="FeedbackIncludeDiag" />
-                            <span>Include diagnostic info (browser, TT version, export state)</span>
-                        </label>
-                        <p class="hint" style="margin-top:4px;">
-                            No analytics, no telemetry. Nothing leaves your
-                            browser unless you click a button below.
-                        </p>
-                    </div>
-
-                    <div class="fb-buttons">
-                        <button class="ff-button"
-                                disabled="@(!HasFeedbackText)"
-                                @onclick="OpenGitHubIssue">
-                            ⚔ OPEN GITHUB ISSUE
-                        </button>
-                        <button class="ff-button"
-                                disabled="@(!HasFeedbackText)"
-                                @onclick="CopyFeedbackPayload">
-                            ⚔ COPY FOR DISCORD / DM
-                        </button>
-                    </div>
-
-                    @if (!string.IsNullOrEmpty(FeedbackLastAction))
-                    {
-                        <p class="fb-status">@FeedbackLastAction</p>
-                    }
-                </div>
-            </div>
-
-        </aside>
-
-
-        <!-- ---- MAIN: Materia recommendations ---- -->
-        <main>
-            <div class="menu-box">
-                <div class="menu-box-title">▶ MATERIA REQUIRED</div>
-                <div class="menu-box-body">
-
-                    @if (Optimization == null)
-                    {
-                        <div class="empty-state">
-                            <div class="empty-icon">📜</div>
-                            <p>No optimization run yet.</p>
-                            <p class="muted">
-                                Paste your export string above and click
-                                OPTIMIZE.
-                            </p>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 4px 2px; font-family:var(--f-mono); font-size:11px; color:var(--frost-dim); flex-wrap:wrap; gap:10px;">
+                            <span>
+                                <span style="display:inline-block; width:8px; height:8px; background:var(--lantern); box-shadow:0 0 6px var(--lantern); margin-right:6px; vertical-align:middle;"></span>
+                                Materia totals from <code class="inline">/ttexport</code>
+                            </span>
+                            <span style="font-style:italic;">Derivation rows + breakpoint markers ship in v0.6.1 (Akhmorning formulas)</span>
                         </div>
-                    }
-                    else if (Optimization.Recommendations.Count == 0)
-                    {
-                        <div class="empty-state">
-                            <div class="empty-icon">✓</div>
-                            <p>All guaranteed slots filled — no melds required.</p>
-                            <p class="muted">
-                                Your gear's empty slots are fully accounted for.
-                                The Tonberry approves.
-                            </p>
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="muted" style="margin-bottom:14px;">
-                            Mode: <strong>@Optimization.OptimizationMode</strong>
-                            &nbsp;·&nbsp; @Optimization.TotalEmptySlots empty slot(s) filled
-                        </p>
-                        <ul class="materia-list">
-                            @foreach (var rec in Optimization.Recommendations)
-                            {
-                                <li class="materia-row">
-                                    <span class="knife-cursor"
-                                          aria-hidden="true">
-                                        <!-- Pixel chef's knife. Swap to <img>
-                                             when tonberry-knife.png exists. -->
-                                        <svg viewBox="0 0 32 16"
-                                             preserveAspectRatio="none">
-                                            <!-- Wood handle -->
-                                            <rect x="2" y="6" width="8" height="4"
-                                                  fill="#6b3a1f"/>
-                                            <rect x="3" y="7" width="6" height="2"
-                                                  fill="#8b5a2f"/>
-                                            <!-- Brass bolster -->
-                                            <rect x="10" y="5" width="2" height="6"
-                                                  fill="#a87b3f"/>
-                                            <!-- Silver blade -->
-                                            <polygon points="12,5 30,8 12,11"
-                                                     fill="#c8c8d0"/>
-                                            <!-- Edge highlight -->
-                                            <polygon points="12,5 30,8 14,7"
-                                                     fill="#e8e8f0"/>
-                                        </svg>
-                                    </span>
-                                    <span class="materia-piece">
-                                        @rec.PieceName
-                                    </span>
-                                    <span class="materia-slot">
-                                        #@(rec.SlotIndex + 1)
-                                    </span>
-                                    <span class="materia-arrow">←</span>
-                                    <span class="materia-meld">
-                                        @rec.MateriaName
-                                    </span>
-                                </li>
-                            }
-                        </ul>
-                    }
-
+                    </div>
                 </div>
+
+                @* MATERIA ADVISOR *@
+                <div class="menu-warm">
+                    <div class="menu-head">
+                        <span class="glyph">◆</span>
+                        <span>Materia Advisor</span>
+                        <span class="spacer"></span>
+                        @if (Optimization?.Recommendations is { Count: > 0 } recs)
+                        {
+                            <span class="pill gold">@recs.Count melds queued</span>
+                        }
+                        <span class="badge">@(Optimization?.OptimizationMode ?? "Pure-Math")</span>
+                    </div>
+                    <div class="menu-body">
+                        @if (Optimization?.Recommendations is { Count: > 0 } recsList)
+                        {
+                            <div class="advisor-list" style="margin:-14px -16px 0;">
+                                @{ int idx = 1; }
+                                @foreach (var rec in recsList)
+                                {
+                                    <div class="advisor-rec">
+                                        <span class="num">@CircledNum(idx)</span>
+                                        <span class="knife">◆</span>
+                                        <div class="desc">
+                                            <span class="target">@rec.Piece · slot @(rec.SlotIndex + 1)</span>
+                                            <span class="arrow"> → </span>
+                                            <span class="change">
+                                                <span class="out" style="font-style:italic;">(empty)</span>
+                                                <span style="color:var(--frost-faint)">›</span>
+                                                <span class="in">@rec.MateriaName</span>
+                                            </span>
+                                            <span class="pill warn">empty slot</span>
+                                            <span class="why">
+                                                Empty guaranteed slot — fill with @rec.StatName priority (+@rec.StatValue @rec.StatName)
+                                            </span>
+                                        </div>
+                                        <div class="gain">
+                                            +@rec.StatValue
+                                            <span style="font-family:var(--f-pixel); font-size:7px; letter-spacing:1.5px; color:var(--frost-dim); margin-left:6px; vertical-align:middle;">@rec.StatName</span>
+                                        </div>
+                                    </div>
+                                    idx++;
+                                }
+                                <div class="advisor-meta">
+                                    <span>
+                                        <span class="mode-tag">Mode · @(Optimization?.OptimizationMode ?? "Pure-Math")</span>
+                                        <span style="margin-left:10px; font-style:italic;">
+                                            applied via <code class="inline">PureMathOptimizer</code> — GNB priority [Crit › DH › Det]
+                                            @if (ParsedPayload?.Character?.JobAbbreviation is { Length: > 0 } jab && jab != "GNB")
+                                            {
+                                                <span style="color:var(--warning); margin-left:8px;">
+                                                    · falling back to GNB priorities (per-job optimizer ships v0.6.1 Core)
+                                                </span>
+                                            }
+                                        </span>
+                                    </span>
+                                    <span style="color:var(--ship-bright)">
+                                        <span style="font-family:var(--f-pixel); font-size:7px; letter-spacing:2px; color:var(--frost-dim); margin-right:8px;">EMPTY</span>
+                                        @recsList.Count slots
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                        else if (ParsedPayload != null)
+                        {
+                            <div style="padding:24px 16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--frost-soft); font-size:14px;">
+                                All guaranteed slots filled. The knife is sharp.
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="padding:24px 16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--frost-dim); font-size:14px;">
+                                Paste an export and STEP FORWARD to summon recommendations.
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* MELD AUDIT *@
+                <div class="menu">
+                    <div class="menu-head">
+                        <span class="glyph">◇</span>
+                        <span>Meld Audit</span>
+                        <span class="spacer"></span>
+                        <span class="badge">v0.6.0 derive</span>
+                    </div>
+                    <div class="menu-body">
+                        <div class="audit" style="margin:-14px -16px 0;">
+                            <div class="audit-cell">
+                                <span class="pip @AuditPipClass(AuditEmptyCount())"></span>
+                                <span class="audit-label">Empty slots</span>
+                                <span class="audit-text">
+                                    @if (AuditEmptyCount() > 0)
+                                    {
+                                        <text>@AuditEmptyCount() guaranteed slot(s) unmelded — fill all via STEP FORWARD</text>
+                                    }
+                                    else if (ParsedPayload != null)
+                                    {
+                                        <text>All guaranteed slots filled</text>
+                                    }
+                                    else
+                                    {
+                                        <text>—</text>
+                                    }
+                                </span>
+                                <span class="audit-count @AuditPipClass(AuditEmptyCount())">@AuditEmptyCount()</span>
+                            </div>
+                            <div class="audit-cell">
+                                <span class="pip ok"></span>
+                                <span class="audit-label">Wrong stat</span>
+                                <span class="audit-text" style="font-style:italic; color:var(--frost-dim);">Per-job priority detection ships v0.6.1 (Core refactor)</span>
+                                <span class="audit-count">—</span>
+                            </div>
+                            <div class="audit-cell">
+                                <span class="pip ok"></span>
+                                <span class="audit-label">Under-tier</span>
+                                <span class="audit-text" style="font-style:italic; color:var(--frost-dim);">Tier-XII detection ships v0.6.1</span>
+                                <span class="audit-count">—</span>
+                            </div>
+                            <div class="audit-cell">
+                                <span class="pip ok"></span>
+                                <span class="audit-label">Overcap</span>
+                                <span class="audit-text" style="font-style:italic; color:var(--frost-dim);">Per-piece cap detection ships v0.6.1 (Numatic bug fix)</span>
+                                <span class="audit-count">—</span>
+                            </div>
+                        </div>
+                        <div style="padding:12px 4px 2px; display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:11px; color:var(--frost-dim); flex-wrap:wrap; gap:8px;">
+                            <span>
+                                Severity:
+                                <span style="color:var(--ship-bright)">● OK</span> ·
+                                <span style="color:var(--lantern)">● Warn</span> ·
+                                <span style="color:var(--blood-bright)">● Error</span>
+                            </span>
+                            <span>Full audit logic lives in the plugin; web parity ships v0.6.1</span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </main>
 
+        @* ─── RIGHT — OPTIMIZER / EXPORT / PLUGIN / FEEDBACK / MANIFESTO ─ *@
+        <aside>
+            <div class="stack-loose">
+
+                @* OPTIMIZER CONTROLS *@
+                <div class="menu">
+                    <div class="menu-head">
+                        <span class="glyph">◇</span>
+                        <span>Optimizer</span>
+                        <span class="spacer"></span>
+                        <span class="badge">config</span>
+                    </div>
+                    <div class="menu-body">
+                        <div style="margin-bottom:16px;">
+                            <div class="h-eyebrow" style="margin-bottom:6px;">▸ Mode</div>
+                            <div class="seg-toggle">
+                                <button class="@(OptimizerMode == "Pure-Math" ? "on" : "")"
+                                        @onclick='() => OptimizerMode = "Pure-Math"'>Pure Math</button>
+                                <button class="@(OptimizerMode == "Balance" ? "on" : "")"
+                                        @onclick='() => OptimizerMode = "Balance"'>Balance</button>
+                            </div>
+                            <div style="margin-top:8px; font-family:var(--f-serif); font-style:italic; font-size:12px; color:var(--frost-dim); line-height:1.5;">
+                                @if (OptimizerMode == "Pure-Math")
+                                {
+                                    <text>Greedy per-stat priority — </text>
+                                    <span style="color:var(--lantern)">fast, naive, ships today.</span>
+                                }
+                                else
+                                {
+                                    <text>Weighted preset from </text>
+                                    <code class="inline">thebalanceffxiv.com</code>
+                                    <text> — </text>
+                                    <span style="color:var(--lantern)">queued for v0.6.1+</span>
+                                }
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-eyebrow" style="margin-bottom:6px;">▸ Job profile</div>
+                            <div class="job-picker">
+                                @foreach (var (abbr, role) in AllJobs)
+                                {
+                                    var jobAbbr = abbr;
+                                    <div class="job-tile role-@role @(ActiveJob() == jobAbbr ? "active" : "")"
+                                         @onclick="@(() => ActiveJobOverride = jobAbbr)">
+                                        @jobAbbr
+                                    </div>
+                                }
+                            </div>
+                            <div class="role-row">
+                                <span><span class="swatch" style="background:#4a6ec0"></span>TANK</span>
+                                <span><span class="swatch" style="background:#5cb070"></span>HEALER</span>
+                                <span><span class="swatch" style="background:#c44a4a"></span>DPS</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* EXPORT CARD *@
+                <div class="menu">
+                    <div class="menu-head">
+                        <span class="glyph">◆</span>
+                        <span>Export to Game</span>
+                        <span class="spacer"></span>
+                        <span class="badge">GG-PLAN:v1:</span>
+                    </div>
+                    <div class="menu-body">
+                        <div style="font-family:var(--f-serif); font-size:13px; color:var(--frost-soft); font-style:italic; margin-bottom:10px; line-height:1.5;">
+                            Copy and paste into <code class="inline">/ttimport</code> back in-game.
+                        </div>
+                        <textarea class="export-textarea" readonly value="@GeneratedImportString"
+                                  placeholder="Plan string appears here after STEP FORWARD."></textarea>
+                        <div style="display:flex; gap:8px; margin-top:10px; align-items:center;">
+                            <button class="btn copy"
+                                    @onclick="CopyImportString"
+                                    disabled="@(string.IsNullOrEmpty(GeneratedImportString))">
+                                ◆ COPY PLAN
+                            </button>
+                            <span style="flex:1"></span>
+                            <span class="pill ice">round-trip ready</span>
+                        </div>
+                    </div>
+                </div>
+
+                @* PLUGIN CALLOUT *@
+                <div class="menu-warm plugin-callout" style="padding:16px 18px;">
+                    <span class="v-tag">◆ Plugin v0.6.0</span>
+                    <div class="body" style="margin-top:8px;">
+                        <strong>The Onion Knight stands ready.</strong>
+                        The in-game half of Tonberry Tactics ships in lockstep — installs as a Dalamud plugin, runs the native Character window injection, and pairs with this site via copy-pasteable strings.
+                        <ul>
+                            <li>Per-substat derived chance / damage / DI</li>
+                            <li>Breakpoint hints under every substat row</li>
+                            <li>Top-3 ranked melds with click-to-<code class="inline">/tt</code> footer</li>
+                            <li>CharacterPanelRefined replacement — coexists or stands alone</li>
+                        </ul>
+                    </div>
+                </div>
+
+                @* FEEDBACK PANEL (v0.5.4 — restyled inside the new menu chrome) *@
+                <div class="menu">
+                    <div class="menu-head">
+                        <span class="glyph">◇</span>
+                        <span>Feedback</span>
+                        <span class="spacer"></span>
+                        <span class="badge">v0.6.0</span>
+                    </div>
+                    <div class="menu-body">
+                        <div style="font-family:var(--f-serif); font-style:italic; font-size:13px; color:var(--frost-soft); line-height:1.5; margin-bottom:12px;">
+                            Bug, disagreement, confusion, or just saying hi — drop a line and it'll find Refia.
+                        </div>
+
+                        <div class="h-eyebrow" style="margin-bottom:6px;">▸ Category</div>
+                        <div class="seg-toggle" style="margin-bottom:10px; flex-wrap:wrap;">
+                            @for (int i = 0; i < FeedbackCategories.Length; i++)
+                            {
+                                var ix = i;
+                                <button class="@(FeedbackCategory == ix ? "on" : "")"
+                                        @onclick="@(() => FeedbackCategory = ix)"
+                                        style="font-size:7px;">@FeedbackCategories[ix]</button>
+                            }
+                        </div>
+
+                        <div class="h-eyebrow" style="margin-bottom:6px;">▸ Message</div>
+                        <textarea class="export-textarea"
+                                  @bind="FeedbackText"
+                                  @bind:event="oninput"
+                                  placeholder="What happened? What did you expect? What would the lantern do?"
+                                  style="min-height:90px;"></textarea>
+
+                        <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-family:var(--f-mono); font-size:11px; color:var(--frost-soft);">
+                            <input type="checkbox" @bind="FeedbackIncludeDiag"/>
+                            Include diagnostic info (version, browser, parser state)
+                        </label>
+
+                        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+                            <button class="btn copy"
+                                    @onclick="OpenGitHubIssue"
+                                    disabled="@(!HasFeedbackText)">
+                                ◆ OPEN GITHUB ISSUE
+                            </button>
+                            <button class="btn ghost"
+                                    @onclick="CopyFeedbackPayload"
+                                    disabled="@(!HasFeedbackText)">
+                                COPY FOR DISCORD
+                            </button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(FeedbackLastAction))
+                        {
+                            <div style="margin-top:10px; font-family:var(--f-mono); font-size:11px; color:var(--ship-bright);">
+                                @FeedbackLastAction
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* TLF MANIFESTO *@
+                <div class="menu" style="padding:14px 16px; border-color:var(--bd-warm);">
+                    <div class="h-eyebrow" style="color:var(--tonberry-bright); margin-bottom:8px;">
+                        ◇ TLF Manifesto
+                    </div>
+                    <div style="font-family:var(--f-serif); font-size:13px; color:var(--frost-soft); line-height:1.65; font-style:italic;">
+                        We carry the lantern. We carry the knife. We do not run.
+                        We step forward, one slot at a time, until the math is done.
+                    </div>
+                    <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap; font-family:var(--f-pixel); font-size:7px; letter-spacing:1.5px; color:var(--frost-dim);">
+                        <span class="pill ice">offline · WASM</span>
+                        <span class="pill ice">no backend</span>
+                        <span class="pill gold">round-trip · v1</span>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
     </div>
 
+    @* ═══════════════════════════════════════════════════════════════ *@
+    @*  TONBERRY TRAIL — CSS-only walking sprite footer animation       *@
+    @* ═══════════════════════════════════════════════════════════════ *@
+    <div class="tonberry-trail">
+        <div class="ground"></div>
+        <div class="doink">◆ STEP ◆</div>
+        <div class="doink">◆ STAB ◆</div>
+        <div class="doink">◆ ONWARD ◆</div>
+        <div class="tonberry">
+            <img src="assets/rags-pixel.png" alt="Onion Knight walking"/>
+        </div>
+    </div>
 
-    <!-- ============================================================
-         FOOTER
-         ============================================================ -->
-    <footer class="tt-footer">
-        <div class="tlf-mark">◆ TONBERRY LIBERATION FRONT ◆</div>
-        A Refia Rakkiri production · "Stab once, stab true."
-    </footer>
+    @* ═══════════════════════════════════════════════════════════════ *@
+    @*  FOOTER                                                          *@
+    @* ═══════════════════════════════════════════════════════════════ *@
+    <div class="foot">
+        <span class="glyph">◆</span>
+        The Onion Knight stands ready
+        <span class="glyph">◆</span>
+        <span class="v">TONBERRY TACTICS · v0.6.0 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
+    </div>
 
 </div>
 
 
 @code {
-    // ── Constants (v0.5.1) ────────────────────────────────────────────
-    private const string EmitterVersion = "0.5.1";
+    // ═════════════════════════════════════════════════════════════════
+    //  CONSTANTS — version-locked with the plugin (v0.5.5 alignment)
+    // ═════════════════════════════════════════════════════════════════
+    private const string EmitterVersion = "0.6.0";
+    private const string TtVersion      = "0.6.0";
 
-    // ── Input / output state ──────────────────────────────────────────
-    private string  ExportString          = "";
-    private string  GeneratedImportString = "";
+    // ═════════════════════════════════════════════════════════════════
+    //  INPUT / OUTPUT + PIPELINE STATE
+    // ═════════════════════════════════════════════════════════════════
+    private string ExportString          = "";
+    private string GeneratedImportString = "";
 
-    // ── Parser + optimizer state. ParsedPayload is the real DTO from
-    //    GG-EXPORT:v1: deserialization; Optimization is the result from
-    //    PureMathOptimizer; ParseError surfaces any failure to the UI.
-    private ExportPayloadV1?       ParsedPayload;
+    private ExportPayloadV1?          ParsedPayload;
     private PureMathOptimizer.Result? Optimization;
-    private string?                ParseError;
+    private string?                   ParseError;
 
-    // ── Portrait state machine. ───────────────────────────────────────
-    //    READY    → portrait_danger       (subdued red ring, neutral)
-    //    COMBAT   → portrait_combat       (lightning energy, engaged)
-    //    DANGER   → portrait_danger_alt1  (vivid red, alert)
+    private string OptimizerMode = "Pure-Math";
+    private string? ActiveJobOverride;
+
+    // ═════════════════════════════════════════════════════════════════
+    //  PORTRAIT STATE MACHINE — maps to design's pipeline state-tag
+    // ═════════════════════════════════════════════════════════════════
     private enum PortraitState { Ready, Combat, Danger }
     private PortraitState Portrait = PortraitState.Ready;
 
-    private string CurrentPortrait() => Portrait switch
+    private string PipelineTagLabel() => Portrait switch
     {
-        PortraitState.Combat => "portrait_combat",
-        PortraitState.Danger => "portrait_danger_alt1",
-        _                    => "portrait_danger",
+        PortraitState.Combat => "ENGAGED",
+        PortraitState.Danger => "WARNING",
+        _                    => "AWAITING",
     };
-    private string PortraitStateClass() => Portrait switch
+    private string PipelineTagClass() => Portrait switch
     {
-        PortraitState.Combat => "portrait-state-combat",
-        PortraitState.Danger => "portrait-state-danger",
-        _                    => "portrait-state-ready",
-    };
-    private string PortraitStateLabel() => Portrait switch
-    {
-        PortraitState.Combat => "▶ ENGAGED",
-        PortraitState.Danger => "▶ WARNING",
-        _                    => "▶ AWAITING",
+        PortraitState.Combat => "engaged",
+        PortraitState.Danger => "warning",
+        _                    => "",
     };
 
-    // ── Real optimizer pipeline (v0.5.1) ──────────────────────────────
+    // ═════════════════════════════════════════════════════════════════
+    //  OPTIMIZER PIPELINE — unchanged from v0.5.5
+    // ═════════════════════════════════════════════════════════════════
     private void RunOptimization()
     {
         if (string.IsNullOrWhiteSpace(ExportString)) return;
 
-        // Reset state for a fresh run.
         ParsedPayload         = null;
         Optimization          = null;
         ParseError            = null;
         GeneratedImportString = "";
 
-        // 1. Parse the GG-EXPORT:v1: string.
         var parseResult = GearsetParser.TryParse(ExportString);
         if (!parseResult.Success || parseResult.Payload is null)
         {
@@ -876,15 +684,11 @@
         }
         ParsedPayload = parseResult.Payload;
 
-        // 2. Run the hardcoded GNB Pure-Math optimizer.
         Optimization = PureMathOptimizer.Optimize(ParsedPayload);
 
-        // 3. Emit the GG-PLAN:v1: round-trip string.
         GeneratedImportString = PlanSerializer.Serialize(
             Optimization, ParsedPayload, EmitterVersion);
 
-        // 4. Update portrait — show ENGAGED on success regardless of
-        //    whether we found anything to recommend, since parse worked.
         Portrait = PortraitState.Combat;
     }
 
@@ -895,10 +699,10 @@
         ParseError            = null;
         GeneratedImportString = "";
         ExportString          = "";
+        ActiveJobOverride     = null;
         Portrait              = PortraitState.Ready;
     }
 
-    // ── Real clipboard via IJSRuntime (v0.5.1) ────────────────────────
     private async Task CopyImportString()
     {
         if (string.IsNullOrEmpty(GeneratedImportString)) return;
@@ -907,25 +711,158 @@
             await JS.InvokeVoidAsync(
                 "navigator.clipboard.writeText", GeneratedImportString);
         }
-        catch
-        {
-            // Browsers without clipboard API or denied permission: the
-            // textarea is rendered readonly so the user can still
-            // Ctrl+A / Ctrl+C manually. No UX disaster.
-        }
+        catch { /* readonly textarea allows manual copy */ }
     }
 
-    // ── v0.5.4 Feedback panel state + handlers ────────────────────────
-    //
-    // Mirrors the GearGoblin plugin's Feedback tab (v0.4.7+). Build a
-    // pre-filled GitHub-issue URL with title/body/labels and open it
-    // via window.open; or copy the same markdown payload to clipboard
-    // for users without a GitHub account. No backend. No webhooks.
-    // Nothing leaves the browser unless the user clicks a button.
+    // ═════════════════════════════════════════════════════════════════
+    //  ADVENTURER CARD HELPERS
+    // ═════════════════════════════════════════════════════════════════
+    private string AdvDisplayName() =>
+        ParsedPayload?.Character is { } c
+            ? $"{c.JobAbbreviation} · Lv {c.Level}"
+            : "Adventurer";
 
+    private string AdvJob()     => ParsedPayload?.Character?.JobAbbreviation ?? "—";
+    private string AdvJobName() => ParsedPayload?.Character?.JobAbbreviation is { Length: > 0 } a
+        ? JobFullName(a) : "";
+    private string AdvLevel()   => ParsedPayload?.Character?.Level.ToString() ?? "—";
+    private string AdvIlvl()    => ParsedPayload?.Character?.AverageItemLevel.ToString() ?? "—";
+
+    // ═════════════════════════════════════════════════════════════════
+    //  GEAR GRID HELPERS — slot-icon glyphs + materia stat classes
+    // ═════════════════════════════════════════════════════════════════
+    private string SlotGlyph(string slot) => slot.ToLower() switch
+    {
+        "mainhand"            => "⚔",
+        "offhand"             => "⛨",
+        "head"                => "⛑",
+        "body" or "chest"     => "☗",
+        "hands" or "gloves"   => "✋",
+        "legs" or "pants"     => "⌷",
+        "feet" or "boots"     => "⌒",
+        "earrings" or "ears"  => "◊",
+        "neck" or "necklace"  => "◊",
+        "wrists" or "bracelet" => "⌑",
+        "ringleft" or "ringright" or "ring1" or "ring2" => "◯",
+        _ => "◆",
+    };
+
+    private string MateriaStatClass(string statName) => statName.ToUpper() switch
+    {
+        "CRT"  => "crit",
+        "DH"   => "dh",
+        "DET"  => "det",
+        "SKS"  => "sks",
+        "SPS"  => "sps",
+        "TEN"  => "ten",
+        "PIE"  => "pie",
+        _      => "",
+    };
+
+    private int GearSlotCount() => ParsedPayload?.Equipped?.Count ?? 0;
+
+    private string GearSetLabel() => ParsedPayload?.Character is { } c
+        ? $"iLvl {c.AverageItemLevel}"
+        : "—";
+
+    private int TotalMateriaCount() =>
+        ParsedPayload?.Equipped?.Sum(p => p.Materia?.Count ?? 0) ?? 0;
+
+    // ═════════════════════════════════════════════════════════════════
+    //  STAT PROFILE HELPERS — materia totals (full derivations v0.6.1)
+    // ═════════════════════════════════════════════════════════════════
+    private record StatCell(string Name, string Value, int MateriaTotal, double PercentOfCap);
+
+    private List<StatCell> BuildStatCells()
+    {
+        var statKeys = new[] { "CRT", "DH", "DET", "TEN", "SKS", "PIE" };
+        var labels   = new Dictionary<string, string>
+        {
+            ["CRT"] = "Critical Hit", ["DH"]  = "Direct Hit",
+            ["DET"] = "Determination",["TEN"] = "Tenacity",
+            ["SKS"] = "Skill Speed",  ["PIE"] = "Piety",
+        };
+        var totals = new Dictionary<string, int>();
+        foreach (var k in statKeys) totals[k] = 0;
+
+        if (ParsedPayload?.Equipped is { } eq)
+        {
+            foreach (var piece in eq)
+            foreach (var m in piece.Materia ?? new List<ExportMateriaV1>())
+            {
+                var key = m.StatName.ToUpper();
+                if (totals.ContainsKey(key))
+                    totals[key] += m.StatValue;
+            }
+        }
+
+        return statKeys.Select(k =>
+        {
+            var t = totals[k];
+            var pct = Math.Min(100.0, t / 3140.0 * 100.0);
+            return new StatCell(labels[k], t > 0 ? $"+{t}" : "—", t, pct);
+        }).ToList();
+    }
+
+    private string StatProfileBadge() => ParsedPayload?.Character is { } c
+        ? $"Lv {c.Level} {c.JobAbbreviation} · materia totals only"
+        : "awaiting import";
+
+    // ═════════════════════════════════════════════════════════════════
+    //  AUDIT HELPERS
+    // ═════════════════════════════════════════════════════════════════
+    private int AuditEmptyCount() => Optimization?.TotalEmptySlots ?? 0;
+
+    private string AuditPipClass(int count)
+    {
+        if (ParsedPayload == null) return "ok";
+        return count > 4 ? "error" : count > 0 ? "warn" : "ok";
+    }
+
+    // ═════════════════════════════════════════════════════════════════
+    //  ADVISOR — circled-number glyphs for rank
+    // ═════════════════════════════════════════════════════════════════
+    private string CircledNum(int n) => n switch
+    {
+        1 => "①", 2 => "②", 3 => "③", 4 => "④", 5 => "⑤",
+        6 => "⑥", 7 => "⑦", 8 => "⑧", 9 => "⑨", 10 => "⑩",
+        _ => $"({n})",
+    };
+
+    // ═════════════════════════════════════════════════════════════════
+    //  OPTIMIZER — 21-job picker
+    // ═════════════════════════════════════════════════════════════════
+    private static readonly (string Abbr, string Role)[] AllJobs = new[]
+    {
+        ("PLD","tank"),  ("WAR","tank"),  ("DRK","tank"),  ("GNB","tank"),
+        ("WHM","healer"),("SCH","healer"),("AST","healer"),("SGE","healer"),
+        ("MNK","dps"),   ("DRG","dps"),   ("NIN","dps"),   ("SAM","dps"),
+        ("RPR","dps"),   ("VPR","dps"),
+        ("BRD","dps"),   ("MCH","dps"),   ("DNC","dps"),
+        ("BLM","dps"),   ("SMN","dps"),   ("RDM","dps"),   ("PCT","dps"),
+    };
+
+    private string ActiveJob() =>
+        ActiveJobOverride
+        ?? ParsedPayload?.Character?.JobAbbreviation
+        ?? "GNB";
+
+    private static string JobFullName(string abbr) => abbr.ToUpper() switch
+    {
+        "PLD" => "Paladin",      "WAR" => "Warrior",     "DRK" => "Dark Knight",  "GNB" => "Gunbreaker",
+        "WHM" => "White Mage",   "SCH" => "Scholar",     "AST" => "Astrologian",  "SGE" => "Sage",
+        "MNK" => "Monk",         "DRG" => "Dragoon",     "NIN" => "Ninja",        "SAM" => "Samurai",
+        "RPR" => "Reaper",       "VPR" => "Viper",
+        "BRD" => "Bard",         "MCH" => "Machinist",   "DNC" => "Dancer",
+        "BLM" => "Black Mage",   "SMN" => "Summoner",    "RDM" => "Red Mage",     "PCT" => "Pictomancer",
+        _ => "",
+    };
+
+    // ═════════════════════════════════════════════════════════════════
+    //  v0.5.4 FEEDBACK PANEL — state + handlers (unchanged)
+    // ═════════════════════════════════════════════════════════════════
     private const string FeedbackRepoUrl =
         "https://github.com/LastOnionKnight/TonberryTactics";
-    private const string TtVersion = "0.5.4";
 
     private static readonly string[] FeedbackCategories =
         { "Bug / glitch", "Optimizer disagreement", "Confusion / unclear", "Just saying hi" };
@@ -937,8 +874,7 @@
     private bool   FeedbackIncludeDiag = true;
     private string FeedbackLastAction  = string.Empty;
 
-    private bool HasFeedbackText =>
-        !string.IsNullOrWhiteSpace(FeedbackText);
+    private bool HasFeedbackText => !string.IsNullOrWhiteSpace(FeedbackText);
 
     private async Task OpenGitHubIssue()
     {
@@ -948,15 +884,13 @@
             var url = await BuildGitHubIssueUrlAsync();
             await JS.InvokeVoidAsync("window.open", url, "_blank", "noopener");
             FeedbackLastAction =
-                $"✓ Opened GitHub issue in a new tab at {DateTime.Now:HH:mm:ss}. " +
-                "Edit and submit there.";
+                $"✓ Opened GitHub issue in a new tab at {DateTime.Now:HH:mm:ss}. Edit and submit there.";
             FeedbackText = string.Empty;
         }
         catch (Exception ex)
         {
             FeedbackLastAction =
-                $"Couldn't open browser tab ({ex.GetType().Name}). " +
-                "Try the Copy button instead.";
+                $"Couldn't open browser tab ({ex.GetType().Name}). Try the Copy button instead.";
         }
     }
 
@@ -969,15 +903,13 @@
             await JS.InvokeVoidAsync(
                 "navigator.clipboard.writeText", payload);
             FeedbackLastAction =
-                $"✓ Copied to clipboard at {DateTime.Now:HH:mm:ss}. " +
-                "Paste in the FC Discord or DM Refia.";
+                $"✓ Copied to clipboard at {DateTime.Now:HH:mm:ss}. Paste in the FC Discord or DM Refia.";
             FeedbackText = string.Empty;
         }
         catch
         {
             FeedbackLastAction =
-                "Couldn't access clipboard — browser may have blocked it. " +
-                "Try a different browser or use the GitHub button.";
+                "Couldn't access clipboard — browser may have blocked it. Try the GitHub button.";
         }
     }
 
@@ -1017,7 +949,7 @@
                 userAgent = await JS.InvokeAsync<string>(
                     "eval", "navigator.userAgent");
             }
-            catch { /* swallow — diagnostic field is best-effort */ }
+            catch { /* swallow */ }
             sb.AppendLine($"User agent:        {userAgent}");
 
             sb.AppendLine($"Has export loaded: {!string.IsNullOrWhiteSpace(ExportString)}");
