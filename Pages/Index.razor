@@ -394,6 +394,71 @@
         margin-bottom: 6px;
         text-shadow: 1px 1px 0 #000;
     }
+    /* === v0.5.4 Feedback panel ====================================== */
+    .ff-theme-wrapper .fb-row {
+        margin-top: 14px;
+    }
+    .ff-theme-wrapper .fb-label {
+        display: block;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 9px;
+        letter-spacing: 1.2px;
+        color: #c2c5d8;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+    }
+    .ff-theme-wrapper .fb-radio-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+    .ff-theme-wrapper .fb-radio {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        font-size: 18px;
+        color: #e8e6d5;
+        user-select: none;
+    }
+    .ff-theme-wrapper .fb-radio input[type="radio"] {
+        accent-color: #f5b95d;     /* lantern */
+        margin: 0;
+    }
+    .ff-theme-wrapper .fb-checkbox {
+        display: inline-flex;
+        align-items: flex-start;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 17px;
+        color: #c2c5d8;
+        user-select: none;
+        line-height: 1.35;
+    }
+    .ff-theme-wrapper .fb-checkbox input[type="checkbox"] {
+        accent-color: #f5b95d;     /* lantern */
+        margin-top: 4px;           /* align with first text line */
+    }
+    .ff-theme-wrapper .fb-buttons {
+        margin-top: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .ff-theme-wrapper .fb-buttons .ff-button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+    .ff-theme-wrapper .fb-status {
+        margin-top: 12px;
+        padding: 8px 10px;
+        background: rgba(109, 180, 78, 0.10);   /* ship green tint */
+        border-left: 3px solid #6db44e;
+        color: #8dc880;
+        font-size: 17px;
+        line-height: 1.4;
+    }
+
 </style>
 
 
@@ -555,6 +620,78 @@
                         wire format; this site is fully compatible with the
                         update.
                     </p>
+                </div>
+            </div>
+
+            <!-- v0.5.4 Feedback panel.
+                 Mirrors the plugin's Feedback tab (GearGoblin v0.4.7+):
+                 pre-filled GitHub issue URL + clipboard fallback for Discord/DM,
+                 with browser/version diagnostic auto-attached. No backend.
+                 No analytics, no telemetry — explicit click only. -->
+            <div class="menu-box">
+                <div class="menu-box-title">▶ FEEDBACK</div>
+                <div class="menu-box-body">
+                    <p class="muted">
+                        Tonberry Tactics is in beta. Tell Refia what's working
+                        and what isn't — bugs, optimizer disagreements, UI
+                        confusion, or anything else.
+                    </p>
+
+                    <div class="fb-row">
+                        <label class="fb-label">CATEGORY</label>
+                        <div class="fb-radio-row">
+                            @foreach (var (label, idx) in FeedbackCategories.Select((l, i) => (l, i)))
+                            {
+                                <label class="fb-radio">
+                                    <input type="radio"
+                                           name="fb-cat"
+                                           value="@idx"
+                                           checked="@(FeedbackCategory == idx)"
+                                           @onchange="@(() => FeedbackCategory = idx)" />
+                                    <span>@label</span>
+                                </label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="fb-row">
+                        <label class="fb-label">MESSAGE</label>
+                        <textarea class="ff-textarea"
+                                  rows="4"
+                                  maxlength="4000"
+                                  placeholder="What happened, what you expected, what you saw..."
+                                  @bind="FeedbackText"
+                                  @bind:event="oninput"></textarea>
+                    </div>
+
+                    <div class="fb-row">
+                        <label class="fb-checkbox">
+                            <input type="checkbox" @bind="FeedbackIncludeDiag" />
+                            <span>Include diagnostic info (browser, TT version, export state)</span>
+                        </label>
+                        <p class="hint" style="margin-top:4px;">
+                            No analytics, no telemetry. Nothing leaves your
+                            browser unless you click a button below.
+                        </p>
+                    </div>
+
+                    <div class="fb-buttons">
+                        <button class="ff-button"
+                                disabled="@(!HasFeedbackText)"
+                                @onclick="OpenGitHubIssue">
+                            ⚔ OPEN GITHUB ISSUE
+                        </button>
+                        <button class="ff-button"
+                                disabled="@(!HasFeedbackText)"
+                                @onclick="CopyFeedbackPayload">
+                            ⚔ COPY FOR DISCORD / DM
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(FeedbackLastAction))
+                    {
+                        <p class="fb-status">@FeedbackLastAction</p>
+                    }
                 </div>
             </div>
 
@@ -753,5 +890,120 @@
             // textarea is rendered readonly so the user can still
             // Ctrl+A / Ctrl+C manually. No UX disaster.
         }
+    }
+
+    // ── v0.5.4 Feedback panel state + handlers ────────────────────────
+    //
+    // Mirrors the GearGoblin plugin's Feedback tab (v0.4.7+). Build a
+    // pre-filled GitHub-issue URL with title/body/labels and open it
+    // via window.open; or copy the same markdown payload to clipboard
+    // for users without a GitHub account. No backend. No webhooks.
+    // Nothing leaves the browser unless the user clicks a button.
+
+    private const string FeedbackRepoUrl =
+        "https://github.com/LastOnionKnight/TonberryTactics";
+    private const string TtVersion = "0.5.4";
+
+    private static readonly string[] FeedbackCategories =
+        { "Bug / glitch", "Optimizer disagreement", "Confusion / unclear", "Just saying hi" };
+    private static readonly string[] FeedbackLabels =
+        { "bug", "optimizer", "ux", "feedback" };
+
+    private int    FeedbackCategory    = 0;
+    private string FeedbackText        = string.Empty;
+    private bool   FeedbackIncludeDiag = true;
+    private string FeedbackLastAction  = string.Empty;
+
+    private bool HasFeedbackText =>
+        !string.IsNullOrWhiteSpace(FeedbackText);
+
+    private async Task OpenGitHubIssue()
+    {
+        if (!HasFeedbackText) return;
+        try
+        {
+            var url = await BuildGitHubIssueUrlAsync();
+            await JS.InvokeVoidAsync("window.open", url, "_blank", "noopener");
+            FeedbackLastAction =
+                $"✓ Opened GitHub issue in a new tab at {DateTime.Now:HH:mm:ss}. " +
+                "Edit and submit there.";
+            FeedbackText = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            FeedbackLastAction =
+                $"Couldn't open browser tab ({ex.GetType().Name}). " +
+                "Try the Copy button instead.";
+        }
+    }
+
+    private async Task CopyFeedbackPayload()
+    {
+        if (!HasFeedbackText) return;
+        try
+        {
+            var payload = await BuildFeedbackPayloadAsync();
+            await JS.InvokeVoidAsync(
+                "navigator.clipboard.writeText", payload);
+            FeedbackLastAction =
+                $"✓ Copied to clipboard at {DateTime.Now:HH:mm:ss}. " +
+                "Paste in the FC Discord or DM Refia.";
+            FeedbackText = string.Empty;
+        }
+        catch
+        {
+            FeedbackLastAction =
+                "Couldn't access clipboard — browser may have blocked it. " +
+                "Try a different browser or use the GitHub button.";
+        }
+    }
+
+    private async Task<string> BuildGitHubIssueUrlAsync()
+    {
+        var category = FeedbackCategories[FeedbackCategory];
+        var label    = FeedbackLabels[FeedbackCategory];
+        var title    = $"[v{TtVersion}] [{category}] ";
+        var body     = await BuildFeedbackPayloadAsync();
+
+        var titleEnc = Uri.EscapeDataString(title);
+        var bodyEnc  = Uri.EscapeDataString(body);
+        var labelEnc = Uri.EscapeDataString(label);
+
+        return $"{FeedbackRepoUrl}/issues/new" +
+               $"?title={titleEnc}&body={bodyEnc}&labels={labelEnc}";
+    }
+
+    private async Task<string> BuildFeedbackPayloadAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("### Category");
+        sb.AppendLine(FeedbackCategories[FeedbackCategory]);
+        sb.AppendLine();
+        sb.AppendLine("### Message");
+        sb.AppendLine(FeedbackText.Trim());
+        sb.AppendLine();
+        if (FeedbackIncludeDiag)
+        {
+            sb.AppendLine("### Diagnostic info");
+            sb.AppendLine("```");
+            sb.AppendLine($"TT version:        {TtVersion}");
+
+            string userAgent = "(unavailable)";
+            try
+            {
+                userAgent = await JS.InvokeAsync<string>(
+                    "eval", "navigator.userAgent");
+            }
+            catch { /* swallow — diagnostic field is best-effort */ }
+            sb.AppendLine($"User agent:        {userAgent}");
+
+            sb.AppendLine($"Has export loaded: {!string.IsNullOrWhiteSpace(ExportString)}");
+            sb.AppendLine($"Active job:        {(ParsedPayload?.Character?.JobAbbreviation ?? "(none)")}");
+            sb.AppendLine($"Optimizer ran:     {Optimization != null}");
+            sb.AppendLine($"Plan emitted:      {!string.IsNullOrEmpty(GeneratedImportString)}");
+            sb.AppendLine($"Generated at:      {DateTime.UtcNow:o}");
+            sb.AppendLine("```");
+        }
+        return sb.ToString();
     }
 }

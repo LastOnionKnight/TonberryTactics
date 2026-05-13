@@ -1,111 +1,78 @@
-# Tonberry Tactics v0.5.2 — Dropin Apply Instructions
+# Tonberry Tactics v0.5.4 dropin
 
-**Target:** `D:\TonberryTactics-workspace\TonberryTactics`
+**Headline:** "Feedback Loop." Closes the beta-reporting loop with
+the in-game plugin. GearGoblin v0.4.7 ships a Feedback tab; this
+release adds the matching panel to the web side.
 
-This is a **docs/content-only** release that aligns Tonberry Tactics with
-GearGoblin v0.4.5's full CharacterPanelRefined replacement positioning.
-The optimizer, parser, serializer, and wire format are bit-for-bit
-identical to v0.5.1 — only landing copy, version strings, README, and
-CHANGELOG were touched.
+## What's in this dropin
 
----
+- `TonberryTactics.csproj` — version 0.5.3 → 0.5.4, Description
+  reframed for Feedback Loop + v0.4.7 compatibility.
+- `Pages/Index.razor` — three additions:
+  1. New `▶ FEEDBACK` `menu-box` in the right-aside column, between
+     PLUGIN UPDATE and the closing `</aside>`. Category radio,
+     multiline message, "Include diagnostic info" checkbox (default
+     on), two action buttons.
+  2. New `.fb-*` CSS classes inside the existing `.ff-theme-wrapper`
+     scoped `<style>` block. Reuses Press Start 2P pixel labels and
+     lantern-gold `accent-color`.
+  3. New code-behind state and handlers in `@code { ... }`:
+     `FeedbackCategories`, `FeedbackLabels`, `FeedbackCategory`,
+     `FeedbackText`, `FeedbackIncludeDiag`, `FeedbackLastAction`,
+     `OpenGitHubIssue()`, `CopyFeedbackPayload()`,
+     `BuildGitHubIssueUrlAsync()`, `BuildFeedbackPayloadAsync()`.
+- `CHANGELOG.md` — new top entry for v0.5.4 plus the captured
+  v0.6.x roadmap note for the TLF Gear Division redesign.
 
-## What changed
+## Build & deploy
 
-| File | Change |
-|---|---|
-| `Pages/Index.razor` | Header version pill bumped to `v0.5.2 · for GearGoblin v0.4.5+`; new amber-bordered "Plugin Update" sidebar callout describing v0.4.5; file-header comment updated; new `.menu-box-accent` CSS for the callout |
-| `README.md` | Front section rewritten to lead with GG v0.4.5 framing; new "Why pair them" section; status line bumped |
-| `CHANGELOG.md` | v0.5.2 entry prepended |
-| `TonberryTactics.csproj` | Version 0.5.1 → 0.5.2; description mentions GG v0.4.5 compat |
-
-**Untouched** (no diff vs v0.5.1):
-- `Models/ExportSchema.cs` (wire-format DTOs)
-- `Services/GearsetParser.cs`
-- `Services/PureMathOptimizer.cs`
-- `Services/PlanSerializer.cs`
-- `wwwroot/*` (portraits, fonts, static assets)
-- `build.sh`, `_redirects`, `_headers`
-- `release.ps1`
-
-## 1. Apply the dropin
-
-Extract over your working tree, overwriting only these four files:
-
-```
-TonberryTactics/
-├── TonberryTactics.csproj   ← version bump 0.5.1 → 0.5.2
-├── CHANGELOG.md             ← v0.5.2 entry prepended
-├── README.md                ← front section rewritten
-└── Pages/
-    └── Index.razor          ← version pill, file header, Plugin Update callout, CSS
-```
-
-## 2. Local sanity check
-
-```powershell
-cd D:\TonberryTactics-workspace\TonberryTactics
+```bash
+cd /path/to/TonberryTactics
 dotnet build -c Release
+# Cloudflare Pages auto-deploys on git push. If you want to verify
+# locally before pushing:
+dotnet run
+# then open http://localhost:5000 (or whatever Kestrel picks)
 ```
 
-Should build clean. No code changed so no new compile errors are
-possible from this dropin — if you hit one, it'll be a pre-existing
-v0.5.1 issue surfaced by a clean build.
+## Smoke test
 
-Optional — local dev server preview before push:
+1. Open `https://tonberrytactics.pages.dev` (or local).
+2. Right-aside column now shows three cards top-to-bottom:
+   `▶ EXPORT TO GAME` → `▶ PLUGIN UPDATE` → `▶ FEEDBACK`.
+3. In the Feedback panel:
+   - Type a test message. Both buttons enable.
+   - Click **COPY FOR DISCORD / DM**. Paste into a chat. Confirm
+     the payload has `### Category`, `### Message`, and (if the
+     checkbox is on) a fenced `### Diagnostic info` block with
+     TT version, user-agent, export state, and timestamp.
+   - Click **OPEN GITHUB ISSUE**. A new tab opens at
+     `github.com/LastOnionKnight/TonberryTactics/issues/new?title=...`
+     pre-populated. (If the repo doesn't exist yet, create it or
+     change the `FeedbackRepoUrl` constant — see Notes below.)
+4. With the checkbox **off**, copy again — confirm the diagnostic
+   block is omitted.
 
-```powershell
-dotnet run -c Release
-```
+## Notes
 
-Open the URL it prints, paste a GG-EXPORT string, confirm:
-- Header pill reads `TLF GEAR DIVISION · v0.5.2 · for GearGoblin v0.4.5+`
-- Right sidebar shows the new amber-bordered "Plugin Update" box below
-  "Export to Game"
-- Existing optimizer behavior is unchanged (same recommendations, same
-  GG-PLAN output)
+- **Repo URL.** Code-behind uses
+  `https://github.com/LastOnionKnight/TonberryTactics`. If you have
+  a different repo (or want feedback to land in the GearGoblin repo
+  instead), change `FeedbackRepoUrl` in the `@code` block — single
+  constant.
+- **TT version.** Hardcoded as `0.5.4` in `TtVersion`. Mirror this
+  with whatever `TonberryTactics.csproj` says when you cut subsequent
+  releases.
+- **No backend.** Same posture as the plugin: GitHub auth + Discord
+  / DM fallback. Nothing leaves the browser without an explicit
+  button press. If volume eventually justifies it, v0.6.x can add a
+  Cloudflare Worker proxy that mirrors anonymized submissions
+  server-side with rate-limiting.
 
-## 3. Push to deploy
+## What's next
 
-Cloudflare Pages auto-rebuilds on push to `main`:
-
-```powershell
-.\release.ps1
-```
-
-Same as yesterday's v0.5.1 ship. Auto-detects 0.5.2 from csproj,
-generates commit message from CHANGELOG v0.5.2 entry, tags `v0.5.2`,
-pushes with `--follow-tags`. If you hit the rejected-push pattern again
-(some unknown commits landed on origin/main between deploys):
-
-```powershell
-git fetch origin
-git pull --rebase origin main
-git tag -f v0.5.2
-git push origin main
-git push origin v0.5.2 --force
-```
-
-Cloudflare picks up the push and rebuilds within ~2-3 minutes. The live
-site at https://tonberrytactics.pages.dev will reflect v0.5.2 once the
-Pages deploy finishes (you'll see the build status in the Cloudflare
-dashboard's Pages > tonberry-tactics > Deployments tab).
-
----
-
-## What this dropin does NOT do
-
-- No new optimizer modes (Balance preset still v0.5.3+)
-- No multi-job awareness (still GNB hardcoded)
-- No stat-cap respecting (still naive Tier XII fills)
-- No code consolidation with the plugin (shared `GearGoblin.Core.dll`
-  remains v0.6.0+ target)
-- No new pages, no routing changes
-- No new dependencies
-
-This is purely "the website acknowledges the plugin grew up."
-
----
-
-*"No gear. No hope. No pants. Just onions." — TLF*
-*Stab once, stab true.*
+- **v0.6.x — TLF Gear Division redesign.** Direction captured at
+  `v060-tt-design-reference/` in the GearGoblin sandbox. Component
+  port map in `CHANGELOG.md`. Includes design tokens, manifesto
+  copy, walking-Tonberry sprite, Tweaks panel for in-design accent
+  swap, optional CRT scanlines.

@@ -4,20 +4,12 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>0.5.3</Version>
-    <AssemblyVersion>0.5.3.0</AssemblyVersion>
-    <FileVersion>0.5.3.0</FileVersion>
+    <Version>0.5.4</Version>
+    <AssemblyVersion>0.5.4.0</AssemblyVersion>
+    <FileVersion>0.5.4.0</FileVersion>
     <Authors>LastOnionKnight</Authors>
-    <Description>Tonberry Tactics — web companion to GearGoblin. AskMrRobot-style hybrid gear optimizer for FFXIV. Pure-Math by default, Balance-preset toggle, exports plans back to the in-game plugin via GG-PLAN:v1: strings. Compatible with GearGoblin v0.4.5+, which now ships as a full CharacterPanelRefined replacement.</Description>
+    <Description>Tonberry Tactics — web companion to GearGoblin. AskMrRobot-style hybrid gear optimizer for FFXIV. Pure-Math by default, Balance-preset toggle, exports plans back to the in-game plugin via GG-PLAN:v1: strings. v0.5.4 ("Feedback Loop") adds a Feedback panel — pre-filled GitHub issue URL + clipboard fallback for Discord/DM, with browser/version diagnostic auto-attached — closing the beta-reporting loop with the in-game plugin's matching tab. Compatible with GearGoblin v0.4.5+ (full CPR coexistence) and the v0.4.7 round-trip /goblinimport command.</Description>
     <RepositoryUrl>https://github.com/LastOnionKnight/TonberryTactics</RepositoryUrl>
-
-    <!-- v0.5.3: disable Blazor static-asset fingerprinting.
-         .NET 10 injects "#[.{fingerprint}]" templates into index.html at publish
-         time; resolving those requires the wasm-tools workload which Cloudflare
-         Pages' build env doesn't pre-install. Disabling here is simpler than
-         installing the workload at build time and we lose only automatic
-         cache-busting on framework asset changes — fine for personal beta. -->
-    <WasmFingerprintAssets>false</WasmFingerprintAssets>
   </PropertyGroup>
 
   <ItemGroup>

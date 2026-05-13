@@ -8,6 +8,84 @@ Tonberry Tactics is the web companion to GearGoblin
 (https://github.com/LastOnionKnight/GearGoblin). Both projects ship together
 when wire-format changes cross the boundary.
 
+## [0.5.4] — 2026-05-13  "Feedback Loop"
+
+**Headline:** Closing the beta-reporting loop. The in-game plugin
+(GearGoblin v0.4.7) ships a Feedback tab; this release adds the
+matching panel to the web side. Same approach on both halves of the
+round-trip: pre-filled GitHub issue URL with diagnostic block
+auto-attached, plus a clipboard fallback for users without GitHub.
+
+No backend. No webhooks. No analytics. No telemetry. Nothing leaves
+the browser unless the user clicks a button. Aligns naturally with
+the "offline · WASM · no backend" principle being explored in the
+v0.6.x redesign direction.
+
+### Added
+
+- **Feedback panel** in the right-aside column, sitting below
+  EXPORT TO GAME and PLUGIN UPDATE. New `▶ FEEDBACK` menu-box with:
+  - Category radio (Bug / glitch, Optimizer disagreement, Confusion
+    / unclear, Just saying hi). Drives the GitHub label
+    (`bug`/`optimizer`/`ux`/`feedback`) and the issue title prefix.
+  - Multiline message field (4000-char cap), bound to
+    `FeedbackText` with `oninput` for responsive disable state.
+  - "Include diagnostic info" checkbox (on by default). When on,
+    auto-attaches a fenced block with: TT version, browser
+    user-agent (via `navigator.userAgent` JS eval), whether an
+    export is loaded, active job from `ParsedPayload.Character`,
+    whether the optimizer has run, whether a plan was emitted,
+    and a UTC timestamp.
+  - Two action buttons: **OPEN GITHUB ISSUE** constructs a
+    `/issues/new?title=...&body=...&labels=...` URL on
+    `github.com/LastOnionKnight/TonberryTactics` and opens it in a
+    new tab via `window.open`; **COPY FOR DISCORD / DM** puts the
+    same markdown payload on the clipboard via the same JS interop
+    pattern as `CopyImportString` (`navigator.clipboard.writeText`).
+  - Both buttons disabled while the message field is empty.
+  - Status line ("✓ Opened …" or "✓ Copied …") appears in a
+    ship-green tinted box after a successful action, with an
+    HH:mm:ss timestamp.
+- **Scoped `.fb-*` CSS classes** inside the existing `.ff-theme-wrapper`
+  style block. Reuses the page's Press Start 2P pixel labels and
+  the lantern (#f5b95d) accent for radio/checkbox `accent-color`.
+
+### Changed
+
+- `TonberryTactics.csproj` — version bumped 0.5.3 → 0.5.4,
+  Description reframed for "Feedback Loop" + GearGoblin v0.4.7
+  round-trip compatibility.
+
+### Roadmap captured
+
+- **v0.6.x "TLF Gear Division" redesign** — direction set via a
+  Claude Design prototype. Hybrid SNES menu chrome + FFXIV serif
+  + Tonberry lantern accents, TLF crest, manifesto block, walking
+  Tonberry footer sprite, palette swap (lantern / frost / blood /
+  void), optional CRT scanlines. Component boundaries preserved
+  from current Blazor structure for clean port:
+
+    | Existing Blazor (Index.razor)  | Target redesign component |
+    |--------------------------------|---------------------------|
+    | Character header / portrait    | `AdventurerCard`          |
+    | 13-slot gear grid              | `Gearset` + `SlotIcon`    |
+    | Stat profile                   | `StatProfile`             |
+    | Materia advisor                | `MateriaAdvisor`          |
+    | Audit counts (v0.5.3+ scan)    | `AuditPanel`              |
+    | EXPORT TO GAME menu-box        | `ExportCard`              |
+    | PLUGIN UPDATE menu-box         | `PluginCallout`           |
+    | Pure-Math / Balance toggles    | `OptimizerControls`       |
+    | NEW v0.5.4 FEEDBACK menu-box   | `FeedbackPanel`           |
+
+  Design reference: prototype HTML/CSS/JSX assets archived at
+  `v060-tt-design-reference/` (alongside the plugin sandbox).
+  Includes TLF design tokens (palette, type, lantern glow, knife
+  cursor), the full component sketch, the manifesto/credo copy,
+  and a Tweaks panel for in-design palette and intensity controls.
+  Desktop-first; tablet/mobile pass deferred.
+
+---
+
 ## [0.5.3] — 2026-05-12
 
 Hotfix release. v0.5.2 deployed to Cloudflare Pages but the live site hung
