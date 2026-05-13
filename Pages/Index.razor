@@ -52,19 +52,37 @@
         padding-bottom: 18px;
         border-bottom: 2px solid #4060a0;
     }
+    /* v0.5.5: brand row — circle logo + wordmark side by side */
+    .ff-theme-wrapper .tt-brand {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        margin-bottom: 12px;
+    }
+    .ff-theme-wrapper .tt-brandmark {
+        width: 96px;
+        height: 96px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(3px 3px 0 #663300) drop-shadow(0 0 12px rgba(255, 204, 68, 0.25));
+        flex-shrink: 0;
+    }
+    .ff-theme-wrapper .tt-brand-text {
+        text-align: left;
+    }
     .ff-theme-wrapper .tt-logo {
         font-family: 'Press Start 2P', 'Courier New', monospace;
         font-size: 26px;
         color: #ffcc44;
         text-shadow: 3px 3px 0 #663300, 6px 6px 0 rgba(0,0,0,0.55);
         letter-spacing: 3px;
-        margin-bottom: 12px;
+        margin-bottom: 8px;
     }
     .ff-theme-wrapper .tt-tag {
-        font-size: 20px;
+        font-size: 18px;
         color: #c0d0ff;
         font-style: italic;
-        margin-bottom: 6px;
     }
     .ff-theme-wrapper .tt-version {
         font-size: 13px;
@@ -468,9 +486,14 @@
          HEADER
          ============================================================ -->
     <header class="tt-header">
-        <div class="tt-logo">▶ TONBERRY TACTICS</div>
-        <div class="tt-tag">"No gear. No hope. No pants. Just onions."</div>
-        <div class="tt-version">TLF GEAR DIVISION &nbsp;·&nbsp; v0.5.2 &nbsp;·&nbsp; for GearGoblin v0.4.5+</div>
+        <div class="tt-brand">
+            <img src="assets/circle-logo.png" alt="Tonberry Tactics" class="tt-brandmark" />
+            <div class="tt-brand-text">
+                <div class="tt-logo">TONBERRY TACTICS</div>
+                <div class="tt-tag">"No gear. No hope. No pants. Just onions."</div>
+            </div>
+        </div>
+        <div class="tt-version">TLF GEAR DIVISION &nbsp;·&nbsp; v0.5.5</div>
     </header>
 
 

@@ -4,11 +4,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>0.5.4</Version>
-    <AssemblyVersion>0.5.4.0</AssemblyVersion>
-    <FileVersion>0.5.4.0</FileVersion>
+    <Version>0.5.5</Version>
+    <AssemblyVersion>0.5.5.0</AssemblyVersion>
+    <FileVersion>0.5.5.0</FileVersion>
     <Authors>LastOnionKnight</Authors>
-    <Description>Tonberry Tactics — web companion to GearGoblin. AskMrRobot-style hybrid gear optimizer for FFXIV. Pure-Math by default, Balance-preset toggle, exports plans back to the in-game plugin via GG-PLAN:v1: strings. v0.5.4 ("Feedback Loop") adds a Feedback panel — pre-filled GitHub issue URL + clipboard fallback for Discord/DM, with browser/version diagnostic auto-attached — closing the beta-reporting loop with the in-game plugin's matching tab. Compatible with GearGoblin v0.4.5+ (full CPR coexistence) and the v0.4.7 round-trip /goblinimport command.</Description>
+    <Description>Tonberry Tactics — companion web app for the in-game plugin. AskMrRobot-style hybrid gear optimizer for FFXIV. Pure-Math by default, Balance-preset toggle, exports plans back to the plugin via GG-PLAN:v1: strings. v0.5.5 ("Brand Convergence") drops in the first round of Refia mascot artwork from Claude Design and the new circle-logo wordmark, retiring the text-only header. Plugin (formerly "GearGoblin") and web are now branded as one product. Round-trip wire-format prefixes (GG-EXPORT:v1:, GG-PLAN:v1:) stay as versioned identifiers — they're not brand names.</Description>
     <RepositoryUrl>https://github.com/LastOnionKnight/TonberryTactics</RepositoryUrl>
   </PropertyGroup>
 

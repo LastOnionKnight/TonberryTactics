@@ -8,6 +8,75 @@ Tonberry Tactics is the web companion to GearGoblin
 (https://github.com/LastOnionKnight/GearGoblin). Both projects ship together
 when wire-format changes cross the boundary.
 
+## [0.5.5] — 2026-05-13  "Brand Convergence"
+
+**Headline:** First round of brand assets from Claude Design lands on the
+live site. The text-only `▶ TONBERRY TACTICS` header is retired in favor
+of the new circle-logo wordmark lockup. Plugin (formerly "GearGoblin")
+and web are now branded as one product — same name on both halves of
+the round-trip.
+
+The full visual redesign — three-palette FF3 dialog-box theme system,
+Refia speech callout, severity-styled audit rows, action bar at bottom
+— remains scoped to v0.6.0 and tracked separately. This release is a
+brand-only landing pad so the rebrand becomes user-visible without
+gating on the full port.
+
+### Added
+
+- **Brand assets** in `wwwroot/assets/`:
+  - `circle-logo.png` — new circular wordmark, wired into the header
+  - `rags-portrait.png` — full hero portrait of Refia (not yet wired;
+    reserved for v0.6.0 hero card)
+  - `rags-action.png` — small action portrait (reserved for the
+    Knight callout in v0.6.0)
+  - `rags-mini.png` — compact avatar (reserved for the left-rail
+    sidebar in v0.6.0)
+
+### Changed
+
+- **Header layout** — `.tt-header` now uses a flex row pairing the
+  circle-logo (96×96) with the wordmark + tagline stack. CSS
+  `image-rendering: pixelated` preserves the pixel-art edge crispness;
+  the `drop-shadow` filter pair gives the logo the same gold-on-brown
+  glow the wordmark already had.
+- **Header version copy** — dropped the stale
+  `"v0.5.2 · for GearGoblin v0.4.5+"` line. The plugin is now also
+  called Tonberry Tactics, so the cross-product coupling reads as
+  circular. Header now reads simply
+  `TLF GEAR DIVISION  ·  v0.5.5`.
+
+### Not changed (still scoped for v0.6.0)
+
+- Full CSS palette swap (three-theme system: ff3-blue, ff6-brown,
+  ff14-indigo) — staged in `/v060-tt-design-reference/` for reference
+- FF3 dialog-box window chrome with doubled-gold-bevel borders
+- Left-rail menu structure with `►` cursor selection indicator
+- Knight callout (Refia speech bubble with action portrait)
+- Severity-styled audit rows (`.sev-crit`, `.sev-warn`, `.sev-ok`)
+- Action bar at bottom (Copy Plan / Re-scan Inventory / Export to Plugin)
+
+### Known limitation
+
+- `circle-logo.png` ships at 704KB. Functionally fine; visually fine.
+  Production should run it through `pngquant` or similar to reduce by
+  60-80%. Defer to v0.6.0 polish pass.
+
+### Wire format
+
+- No change. `GG-EXPORT:v1:` and `GG-PLAN:v1:` prefixes stay — they're
+  versioned identifiers, not brand names. Breaking them would break
+  round-trip with any beta plugin still in the wild.
+
+### Files touched
+
+- `Pages/Index.razor` — header markup + `.tt-brand*` CSS
+- `wwwroot/assets/` — new directory, four PNG assets
+- `TonberryTactics.csproj` — `<Version>0.5.5</Version>`, Description
+  rewrite
+
+---
+
 ## [0.5.4] — 2026-05-13  "Feedback Loop"
 
 **Headline:** Closing the beta-reporting loop. The in-game plugin

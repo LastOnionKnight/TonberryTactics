@@ -1,0 +1,794 @@
+/* GearGoblin — FF3 Onion Knight aesthetic
+ * ImGui-realistic: flat fills, sharp edges, no gradients on widgets.
+ * Theme via [data-palette]: ff3-blue (default) / ff6-brown / ff14-indigo
+ */
+
+:root,
+[data-palette="ff3-blue"] {
+  --bg-window-fill:    #0c1a5e;   /* deep cobalt — FF3 dialog box */
+  --bg-window-inner:   #16278c;   /* lighter inner panel */
+  --bg-titlebar:       #0a1450;
+  --bg-content:        #0c1a5e;
+  --bg-row:            #142680;
+  --bg-row-alt:        #102070;
+  --bg-row-hover:      #2a4ed0;
+  --bg-row-selected:   #2840b8;
+
+  --border-gold:       #f8d34a;
+  --border-gold-bright:#fff2b0;
+  --border-gold-dark:  #8a5a18;
+  --border-hair:       rgba(248,211,74,0.32);
+
+  --fg-1:              #fbfbfd;   /* primary white */
+  --fg-2:              #c7d0ff;   /* secondary cool */
+  --fg-3:              #8a96d0;   /* muted */
+  --fg-cursor:         #ffea7a;   /* selection cursor + glyphs */
+  --fg-accent:         #8de0ff;   /* cyan accent */
+
+  --ok:                #7be07b;
+  --warn:              #f8d34a;
+  --err:               #ff6a6a;
+
+  --score-bar:         #8de0ff;
+  --score-bar-bg:      rgba(248,211,74,0.18);
+
+  --field-bg:          #050d3a;
+  --backdrop:          #06081a;
+
+  --window-shadow: 0 0 0 1px #000, 0 24px 48px rgba(0,0,0,0.55);
+}
+
+[data-palette="ff6-brown"] {
+  --bg-window-fill:    #2a1808;
+  --bg-window-inner:   #4a2c14;
+  --bg-titlebar:       #1e1004;
+  --bg-content:        #2a1808;
+  --bg-row:            #3e2210;
+  --bg-row-alt:        #341d0c;
+  --bg-row-hover:      #6a3a18;
+  --bg-row-selected:   #5a3014;
+
+  --border-gold:       #e8b450;
+  --border-gold-bright:#fce29a;
+  --border-gold-dark:  #6a3e10;
+  --border-hair:       rgba(232,180,80,0.32);
+
+  --fg-1:              #fff4dc;
+  --fg-2:              #f0d9a8;
+  --fg-3:              #c0a070;
+  --fg-cursor:         #ffe48a;
+  --fg-accent:         #ffb766;
+
+  --ok:                #9ad26a;
+  --warn:              #ffd066;
+  --err:               #ff7a5a;
+
+  --score-bar:         #ffb766;
+  --score-bar-bg:      rgba(232,180,80,0.18);
+
+  --field-bg:          #160a02;
+  --backdrop:          #0d0602;
+}
+
+[data-palette="ff14-indigo"] {
+  --bg-window-fill:    #fbf6e9;   /* vellum */
+  --bg-window-inner:   #f3ead4;
+  --bg-titlebar:       #2c4a7e;   /* indigo */
+  --bg-content:        #fbf6e9;
+  --bg-row:            #f3ead4;
+  --bg-row-alt:        #efe3c6;
+  --bg-row-hover:      #e6d6ad;
+  --bg-row-selected:   #d8c594;
+
+  --border-gold:       #2c4a7e;
+  --border-gold-bright:#3e5fa0;
+  --border-gold-dark:  #1b2f54;
+  --border-hair:       rgba(44,74,126,0.32);
+
+  --fg-1:              #1f1810;
+  --fg-2:              #4a3a26;
+  --fg-3:              #7a6a52;
+  --fg-cursor:         #d67b3c;   /* ember */
+  --fg-accent:         #2c4a7e;
+
+  --ok:                #3f7d3f;
+  --warn:              #b6841e;
+  --err:               #a83020;
+
+  --score-bar:         #2c4a7e;
+  --score-bar-bg:      rgba(44,74,126,0.14);
+
+  --field-bg:          #ffffff;
+  --backdrop:          #d8caa6;
+
+  --window-shadow: 0 0 0 1px rgba(0,0,0,0.08), 0 18px 40px rgba(60,40,15,0.22);
+}
+
+/* ─── base ───────────────────────────────────────────────────────────────── */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--backdrop);
+  font-family: "VT323", "JetBrains Mono", ui-monospace, monospace;
+  color: var(--fg-1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+/* Subtle scanline / vignette so the "game" feels alive behind the window */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, transparent 0%, rgba(0,0,0,0.55) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: "";
+  position: fixed; inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.06) 0px,
+    rgba(0,0,0,0.06) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+}
+
+body[data-scanlines="off"]::after { display: none; }
+
+#root { position: relative; z-index: 2; min-height: 100%; display: grid; place-items: center; padding: 32px; }
+
+/* ─── window chrome (FF3 dialog box) ─────────────────────────────────────── */
+
+.gg-window {
+  width: min(1080px, 100%);
+  background: var(--bg-window-fill);
+  color: var(--fg-1);
+  position: relative;
+  box-shadow: var(--window-shadow, 0 0 0 1px #000, 0 24px 48px rgba(0,0,0,0.55));
+  /* the classic FF3 doubled-gold-bevel border, all done with box-shadow rings */
+  outline: 2px solid var(--border-gold);
+  outline-offset: -8px;
+}
+
+.gg-window::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 4px solid transparent;
+  box-shadow:
+    inset 0 0 0 1px var(--border-gold-bright),
+    inset 0 0 0 4px var(--bg-window-fill),
+    inset 0 0 0 5px var(--border-gold-dark),
+    inset 0 0 0 6px var(--border-gold),
+    inset 0 0 0 7px var(--border-gold-dark);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* corner-notch ornaments — tiny gold pixel squares at each corner */
+.gg-window > .gg-corner {
+  position: absolute;
+  width: 14px; height: 14px;
+  background: var(--border-gold);
+  box-shadow:
+    inset 0 0 0 1px var(--border-gold-dark),
+    inset 2px 2px 0 0 var(--border-gold-bright);
+  z-index: 2;
+}
+.gg-corner.tl { top: 4px; left: 4px; }
+.gg-corner.tr { top: 4px; right: 4px; }
+.gg-corner.bl { bottom: 4px; left: 4px; }
+.gg-corner.br { bottom: 4px; right: 4px; }
+
+/* title bar */
+.gg-titlebar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 20px 0 28px;
+  background: var(--bg-titlebar);
+  border-bottom: 1px solid var(--border-hair);
+  z-index: 2;
+  margin: 8px 8px 0 8px;
+}
+
+.gg-titlebar .gg-title {
+  font-family: "Press Start 2P", "VT323", monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--fg-1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.gg-titlebar .gg-title em {
+  font-style: normal;
+  color: var(--fg-cursor);
+}
+.gg-titlebar .gg-title .ver {
+  color: var(--fg-3);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.gg-titlebar .gg-winbtns {
+  display: flex;
+  gap: 4px;
+}
+.gg-winbtn {
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  color: var(--fg-2);
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: default;
+}
+.gg-winbtn:hover { background: var(--bg-row-hover); border-color: var(--border-gold); color: var(--fg-1); }
+
+/* body grid: left rail + right content */
+.gg-body {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  margin: 0 8px 8px 8px;
+  background: var(--bg-content);
+  min-height: 560px;
+}
+
+/* ─── left rail menu ──────────────────────────────────────────────────────── */
+
+.gg-rail {
+  background: var(--bg-window-fill);
+  border-right: 1px solid var(--border-hair);
+  padding: 16px 0 8px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.gg-rail-header {
+  padding: 0 16px 12px 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px dashed var(--border-hair);
+  margin-bottom: 12px;
+}
+
+.gg-rail-header .gg-mini-knight {
+  width: 38px; height: 38px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  image-rendering: pixelated;
+}
+
+.gg-rail-header .gg-rail-meta { display: flex; flex-direction: column; gap: 2px; }
+.gg-rail-header .gg-rail-meta .name {
+  font-family: "Press Start 2P", monospace;
+  font-size: 9px;
+  color: var(--fg-1);
+  letter-spacing: 0.08em;
+}
+.gg-rail-header .gg-rail-meta .job {
+  font-family: "VT323", monospace;
+  font-size: 14px;
+  color: var(--fg-cursor);
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.gg-rail nav { display: flex; flex-direction: column; }
+
+.gg-rail-item {
+  font-family: "VT323", monospace;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  color: var(--fg-2);
+  padding: 6px 14px 6px 22px;
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+  background: transparent;
+  border: none;
+  text-align: left;
+  user-select: none;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+.gg-rail-item:hover { background: var(--bg-row-hover); color: var(--fg-1); }
+.gg-rail-item.is-selected { background: var(--bg-row-selected); color: var(--fg-1); }
+.gg-rail-item .cursor {
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  color: var(--fg-cursor);
+  visibility: hidden;
+}
+.gg-rail-item.is-selected .cursor { visibility: visible; }
+.gg-rail-item .badge {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--fg-3);
+  background: var(--field-bg);
+  border: 1px solid var(--border-hair);
+  padding: 1px 6px;
+  letter-spacing: 0.02em;
+}
+.gg-rail-item.is-selected .badge { color: var(--fg-cursor); border-color: var(--border-gold-dark); }
+
+.gg-rail-spacer { flex: 1; }
+
+.gg-rail-foot {
+  padding: 8px 22px;
+  font-family: "VT323", monospace;
+  font-size: 14px;
+  color: var(--fg-3);
+  border-top: 1px dashed var(--border-hair);
+}
+.gg-rail-foot .key {
+  display: inline-block;
+  font-family: "Press Start 2P", monospace;
+  font-size: 8px;
+  border: 1px solid var(--border-hair);
+  padding: 2px 4px;
+  margin: 0 2px;
+  color: var(--fg-2);
+}
+
+/* ─── right content ───────────────────────────────────────────────────────── */
+
+.gg-content {
+  padding: 18px 26px 24px 26px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* faint pixel-grid texture inside the content area */
+.gg-content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 2px 2px, var(--border-hair) 0.5px, transparent 1px);
+  background-size: 8px 8px;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.gg-content > * { position: relative; }
+
+/* screen header — three-column so the hero knight has dedicated space
+   to the right and titles never extend under it */
+.gg-screen-head {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  grid-template-rows: auto auto;
+  column-gap: 18px;
+  row-gap: 10px;
+  margin-bottom: 14px;
+  min-height: 220px;
+}
+.gg-screen-head .gg-titles { grid-column: 1; grid-row: 1 / span 2; align-self: start; }
+.gg-screen-head .gg-status-chips { grid-column: 1; grid-row: 2; align-self: end; justify-self: start; }
+.gg-screen-head .eyebrow {
+  font-family: "Press Start 2P", monospace;
+  font-size: 9px;
+  color: var(--fg-3);
+  letter-spacing: 0.16em;
+  margin-bottom: 6px;
+}
+.gg-screen-head h1 {
+  margin: 0;
+  font-family: "VT323", monospace;
+  font-size: 32px;
+  font-weight: normal;
+  letter-spacing: 0.04em;
+  color: var(--fg-1);
+  line-height: 1.05;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+.gg-screen-head h1 .title-text { display: inline-block; }
+.gg-screen-head h1 .ornament {
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+  color: var(--fg-cursor);
+}
+.gg-screen-head .subtitle {
+  font-family: "VT323", monospace;
+  font-size: 17px;
+  color: var(--fg-2);
+  margin-top: 10px;
+  line-height: 1.35;
+  max-width: 58ch;
+  text-wrap: pretty;
+}
+
+.gg-status-chips {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.gg-chip {
+  font-family: "Press Start 2P", monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 6px 9px 5px 9px;
+  background: var(--field-bg);
+  border: 1px solid var(--border-hair);
+  color: var(--fg-2);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  line-height: 1;
+}
+.gg-chip .num {
+  font-size: 12px;
+  color: var(--fg-1);
+}
+.gg-chip.ok    .num { color: var(--ok); }
+.gg-chip.warn  .num { color: var(--warn); }
+.gg-chip.err   .num { color: var(--err); }
+
+/* "scroll" callout (the Onion Knight reports) */
+.gg-knight-callout {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 18px 12px 14px;
+  background: var(--bg-row-alt);
+  border: 1px solid var(--border-hair);
+  margin-bottom: 18px;
+  position: relative;
+}
+.gg-knight-callout::after {
+  /* pixel-ornament caret on the right edge so it reads like a dialog tail */
+  content: "";
+  position: absolute;
+  right: -1px; top: 50%;
+  width: 6px; height: 6px;
+  background: var(--border-gold);
+  transform: translateY(-50%) rotate(45deg);
+  box-shadow: -1px 1px 0 var(--border-gold-dark);
+}
+.gg-knight-callout .speaker {
+  font-family: "Press Start 2P", monospace;
+  font-size: 9px;
+  color: var(--fg-cursor);
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+  display: block;
+}
+.gg-knight-callout .speech {
+  font-family: "VT323", monospace;
+  font-size: 19px;
+  color: var(--fg-1);
+  line-height: 1.25;
+  text-wrap: pretty;
+}
+.gg-knight-callout .speech .accent { color: var(--fg-cursor); }
+
+/* section header bar — sharp pixel-bracket style */
+.gg-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 22px 0 10px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed var(--border-hair);
+}
+.gg-section-head h2 {
+  margin: 0;
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  color: var(--fg-cursor);
+  letter-spacing: 0.12em;
+}
+.gg-section-head h2 .glyph {
+  color: var(--fg-2);
+  margin-right: 8px;
+}
+.gg-section-head .meta {
+  font-family: "VT323", monospace;
+  font-size: 15px;
+  color: var(--fg-3);
+}
+
+/* recommendation rows — three quest-card style boxes */
+.gg-recs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gg-rec {
+  display: grid;
+  grid-template-columns: 32px 130px 1fr auto 96px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-row);
+  border: 1px solid var(--border-hair);
+  font-family: "VT323", monospace;
+  font-size: 18px;
+  color: var(--fg-1);
+}
+.gg-rec:nth-child(even) { background: var(--bg-row-alt); }
+.gg-rec:hover { background: var(--bg-row-hover); border-color: var(--border-gold-dark); }
+
+.gg-rec .rank {
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  color: var(--fg-cursor);
+  text-align: center;
+  letter-spacing: 0;
+}
+
+.gg-rec .slot {
+  display: flex; align-items: center; gap: 8px;
+}
+.gg-rec .slot .slot-icon {
+  width: 18px; height: 18px;
+  display: inline-grid; place-items: center;
+  color: var(--fg-2);
+}
+.gg-rec .slot .slot-label {
+  color: var(--fg-2);
+  letter-spacing: 0.02em;
+}
+
+.gg-rec .swap {
+  display: grid;
+  grid-template-columns: 1fr 14px 1fr;
+  align-items: center;
+  gap: 8px;
+  font-family: "VT323", monospace;
+  font-size: 17px;
+}
+.gg-rec .swap > span { min-width: 0; }
+.gg-rec .swap .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gg-rec .swap .from { color: var(--fg-3); text-decoration: line-through; text-decoration-color: var(--err); }
+.gg-rec .swap .arrow {
+  font-family: "Press Start 2P", monospace;
+  font-size: 9px;
+  color: var(--fg-cursor);
+  text-align: center;
+}
+.gg-rec .swap .to { color: var(--fg-1); }
+.gg-rec .swap .empty { color: var(--fg-3); font-style: italic; }
+
+.gg-rec .gain {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  color: var(--ok);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.gg-rec .gain .num { font-weight: 700; color: var(--ok); }
+.gg-rec .gain .lbl { font-size: 11px; color: var(--fg-3); }
+
+.gg-rec .apply {
+  font-family: "Press Start 2P", monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--fg-1);
+  background: var(--bg-titlebar);
+  border: 1px solid var(--border-gold-dark);
+  padding: 8px 6px 7px 6px;
+  text-align: center;
+  cursor: default;
+}
+.gg-rec .apply:hover {
+  background: var(--bg-row-hover);
+  border-color: var(--border-gold);
+  color: var(--fg-cursor);
+}
+
+/* "empty" rec row when nothing to suggest */
+.gg-rec.is-empty {
+  grid-template-columns: 36px 1fr;
+  color: var(--fg-3);
+  font-style: italic;
+}
+.gg-rec.is-empty .rank { color: var(--ok); }
+
+/* audit table */
+.gg-audit {
+  background: var(--bg-row-alt);
+  border: 1px solid var(--border-hair);
+}
+.gg-audit-row {
+  display: grid;
+  grid-template-columns: 18px 1.4fr 2fr 1fr 90px;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 12px;
+  font-family: "VT323", monospace;
+  font-size: 17px;
+  border-bottom: 1px dashed var(--border-hair);
+}
+.gg-audit-row:last-child { border-bottom: none; }
+.gg-audit-row .severity {
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  text-align: center;
+}
+.gg-audit-row.sev-crit .severity { color: var(--err); }
+.gg-audit-row.sev-warn .severity { color: var(--warn); }
+.gg-audit-row.sev-ok   .severity { color: var(--ok); }
+.gg-audit-row .slot-cell { color: var(--fg-2); }
+.gg-audit-row .reason { color: var(--fg-1); }
+.gg-audit-row .reason em { color: var(--fg-cursor); font-style: normal; }
+.gg-audit-row .gain { color: var(--fg-3); font-family: "JetBrains Mono", monospace; font-size: 13px; text-align: right; }
+
+.gg-audit-row .verdict {
+  font-family: "Press Start 2P", monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  padding: 4px 6px;
+  border: 1px solid;
+}
+.gg-audit-row.sev-crit .verdict { color: var(--err); border-color: var(--err); }
+.gg-audit-row.sev-warn .verdict { color: var(--warn); border-color: var(--warn); }
+.gg-audit-row.sev-ok   .verdict { color: var(--ok);  border-color: var(--ok); }
+
+/* footer actions */
+.gg-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-hair);
+}
+
+.gg-btn {
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 10px 14px 9px 14px;
+  background: var(--bg-row);
+  color: var(--fg-1);
+  border: 1px solid var(--border-gold-dark);
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.gg-btn:hover {
+  background: var(--bg-row-hover);
+  border-color: var(--border-gold);
+  color: var(--fg-cursor);
+}
+.gg-btn.is-primary {
+  background: var(--bg-titlebar);
+  border-color: var(--border-gold);
+  color: var(--fg-cursor);
+}
+.gg-btn.is-primary:hover {
+  background: var(--bg-row-selected);
+  color: var(--fg-1);
+}
+.gg-btn .glyph { color: var(--fg-cursor); }
+
+/* big mascot portrait — sits inside the screen-head grid */
+.gg-hero-knight {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: start center;
+  image-rendering: pixelated;
+  align-self: start;
+  position: relative;
+}
+
+/* mascot image rendering */
+.gg-mascot {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
+  /* drop-shadow gives the sprite a pixel-art rim against the dark bg */
+  filter:
+    drop-shadow(1px 0 0 #000)
+    drop-shadow(-1px 0 0 #000)
+    drop-shadow(0 1px 0 #000)
+    drop-shadow(0 -1px 0 #000);
+}
+.gg-mascot--hero { width: 180px; height: auto; }
+.gg-mascot--callout { width: 64px; height: auto; }
+.gg-mascot--rail { width: 38px; height: auto; }
+
+/* invert the rim shadow on light themes so it reads on vellum bg */
+[data-palette="ff14-indigo"] .gg-mascot {
+  filter:
+    drop-shadow(1px 0 0 var(--border-gold-dark))
+    drop-shadow(-1px 0 0 var(--border-gold-dark))
+    drop-shadow(0 1px 0 var(--border-gold-dark))
+    drop-shadow(0 -1px 0 var(--border-gold-dark));
+}
+
+/* brandmark in title bar */
+.gg-brandmark {
+  width: 22px;
+  height: 22px;
+  image-rendering: auto;
+  filter:
+    brightness(1.15)
+    drop-shadow(0 0 4px rgba(248, 211, 74, 0.4));
+}
+[data-palette="ff14-indigo"] .gg-brandmark {
+  filter: none;
+}
+.gg-hero-knight::after {
+  /* pixel plinth so the knight has visual ground */
+  content: "";
+  display: block;
+  width: 100%;
+  height: 6px;
+  background:
+    repeating-linear-gradient(90deg,
+      var(--border-gold) 0 4px,
+      var(--border-gold-dark) 4px 8px);
+  margin-top: 4px;
+  opacity: 0.7;
+}
+.gg-hero-knight .label {
+  font-family: "Press Start 2P", monospace;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: var(--fg-3);
+  text-align: center;
+  margin-top: 8px;
+}
+.gg-hero-knight .label em {
+  font-style: normal;
+  color: var(--fg-cursor);
+}
+
+/* score gain progress (thin bar inline) */
+.gg-bar {
+  width: 64px; height: 6px;
+  background: var(--score-bar-bg);
+  border: 1px solid var(--border-hair);
+  position: relative;
+}
+.gg-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--score-bar);
+}
+
+/* small pixel-icons (sword / shield / orb glyphs drawn via box-shadow) */
+.gg-pix { display: inline-block; image-rendering: pixelated; }
+
+/* responsive */
+@media (max-width: 880px) {
+  .gg-body { grid-template-columns: 1fr; }
+  .gg-rail { border-right: none; border-bottom: 1px solid var(--border-hair); }
+  .gg-hero-knight { display: none; }
+}
