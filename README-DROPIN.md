@@ -1,86 +1,79 @@
-# Tonberry Tactics v0.6.4 dropin — "Vendored Lockstep"
+# TonberryTactics web v0.6.5 dropin — "Audit lit up"
 
-**Headline:** Restores the per-job materia priority feature that
-v0.6.3 tried and reverted, without using a ProjectReference that
-Cloudflare Pages CI can't resolve. Three Core files vendored into
-`Services/Core/` so the web builds self-contained in CI.
+**Headline:** Wires the Meld Audit panel rows (Wrong stat /
+Under-tier / Overcap) to real logic, adds a Sell / replace verdict
+row with per-materia expandable breakdown, and syncs the vendored
+MateriaTiers.cs to match Core's Quickarm fix.
 
 ## What's in this dropin
 
 ```
-Services/Core/StatNames.cs        new — vendored from Core v0.6.3
-Services/Core/MateriaTiers.cs     new — vendored from Core v0.6.3
-Services/Core/JobPriorities.cs    new — vendored from Core v0.6.3
-Services/Core/VENDORED.md         new — sync-workflow doc
-Services/PureMathOptimizer.cs     overwrite — consumes Core types
-Pages/Index.razor                 overwrite — canonical stat matching + advisor badge text + v0.6.4 chrome
-TonberryTactics.csproj            overwrite — v0.6.4, NO ProjectReference
-CHANGELOG.md                      overwrite — v0.6.4 entry on top
+Services/Core/MateriaTiers.cs    overwrite — Skill Speed prefix sync (Piety → Quickarm)
+Pages/Index.razor                 overwrite — real audit logic + Sell/replace row + version bump
+TonberryTactics.csproj            overwrite — version 0.6.4 → 0.6.5
+CHANGELOG.md                      overwrite — v0.6.5 entry on top
 ```
-
-## Why this approach
-
-v0.6.3 attempted a `<ProjectReference>` to a sibling `GearGoblin.Core`
-repo. Cloudflare Pages' build environment only has the TonberryTactics
-repo's contents available — it can't see a sibling directory outside
-the repo. v0.6.3 was reverted (`86beba2`) and the web has been at
-v0.6.0-equivalent ever since.
-
-v0.6.4 vendors the three Core files into `Services/Core/`. The
-namespace stays `GearGoblin.Core` so all the `using GearGoblin.Core;`
-and `GearGoblin.Core.X.Y` references compile identically whether
-the types come from a ProjectReference or from this vendored copy.
-
-Plugin's own `<ProjectReference>` to Core is **unchanged**. The plugin
-still consumes Core via the normal sibling-repo path. The two halves
-agree on the namespace + signatures; the bytes are mirrored by hand
-until the v0.7.x submodule migration.
 
 ## Build & deploy
 
 ```
 cd D:\TonberryTactics-workspace\TonberryTactics
+Move-Item $env:USERPROFILE\Downloads\TonberryTactics-v0.6.5-dropin.zip ..\ -Force
+Expand-Archive -Path ..\TonberryTactics-v0.6.5-dropin.zip -DestinationPath . -Force
+Unblock-File .\release.ps1
+git status
 dotnet build -c Release
 .\release.ps1 -DryRun
 .\release.ps1
 ```
 
-Cloudflare Pages auto-deploys on push to main. The build should
-succeed this time because the project no longer references anything
-outside the repo.
+## Verify after Cloudflare Pages deploys
 
-## Smoke test (after Cloudflare deploys)
+1. Hard-refresh tonberrytactics.pages.dev (Ctrl+F5).
+2. Header pill should read **v0.6.5**. Footer copy should say
+   `TONBERRY TACTICS · v0.6.5 · CLOUDFLARE PAGES · ...`.
+3. Paste a real `GG-EXPORT:v1:` string from the plugin (v0.6.5
+   plugin recommended — that's the one with the HQ fix).
+4. **Open the Meld Audit panel.** Pre-v0.6.5 the Wrong stat /
+   Under-tier / Overcap rows showed `—` with italic "ships v0.6.1"
+   captions. Now they should show real counts:
+   - **Wrong stat:** count of melds outside the active job's
+     priority list.
+   - **Under-tier:** count of melds below Tier XII.
+   - **Overcap:** count of pieces with 3+ Tier XII on one stat.
+   - **Sell / replace:** total of materia recommended to replace,
+     with `(show breakdown)` toggle.
+5. Click "show breakdown". You should see a list of `Piece · slot N
+   · Current materia · Headline · Detail` lines, matching the
+   plugin's in-game Materia → Audit tab format.
+6. Verify Skill Speed materia (if any) renders as "Quickarm
+   Materia XII" — not "Piety Materia XII".
 
-1. Open `https://tonberrytactics.pages.dev`. Hard-refresh `Ctrl+Shift+R`.
-2. Version pill in the top-right reads **v 0.6.4**. Footer reads
-   `TONBERRY TACTICS · v0.6.4 · CLOUDFLARE PAGES`.
-3. Paste an AST plugin export into the STEP FORWARD box.
-4. Materia Advisor mode badge reads
-   `· real AST priority from thebalanceffxiv.com` (cyan), NOT
-   `· falling back to GNB priorities` (amber).
-5. Recommended fills for empty slots follow healer priority
-   (Crit → DH → DET → SPS → PIE), not tank.
-6. Stat Profile shows non-zero numbers for stats your character has
-   melded. Pre-v0.6.4 these were all `+0` for plugin payloads.
-7. Try a non-tabled job (none exist yet — every job has a Core entry —
-   but if you fake a payload with `"jobAbbreviation": "XYZ"`, the
-   badge should read "falling back to GNB tank baseline (Core has
-   no table for XYZ)").
+## Pairing
 
-## Lockstep
+- **GearGoblin.Core v0.6.5** — lockstep version bump only, no
+  source changes. Ships separately.
+- **GearGoblin plugin v0.6.5** — "Crafted Visible". Critical HQ
+  fix. Web's new audit logic relies on receiving the full 13-piece
+  gearset from the plugin — without the plugin v0.6.5 HQ-offset
+  fix, the web continues to receive 3-of-13 piece exports and has
+  almost nothing to audit. Ship plugin v0.6.5 before/with this
+  web release.
 
-This ships alongside:
+## Note on the existing audit panel CSS
 
-- **GearGoblin.Core v0.6.4** — content unchanged from v0.6.3 in
-  practice; version bump is for lockstep alignment.
-- **GearGoblin plugin v0.6.4** — keeps real ProjectReference to Core.
+The new Sell/replace row reuses the existing `.audit-cell` /
+`.pip` / `.audit-text` styles defined inline. The expandable
+breakdown sits inside the `.audit` grid (which is set to
+`grid-column: 1 / -1` to span all columns) and uses inline styles
+matching the existing TLF lantern theme (`var(--bg-2)`,
+`var(--lantern)`, `var(--lantern-dim)`, `var(--frost)`,
+`var(--frost-dim)`, `var(--ship-bright)`, `var(--warning)`). No
+CSS file changes — pure Razor.
 
-All three projects align on v0.6.4 after this release.
+## Out of scope (v0.6.6+)
 
-## v0.7.x roadmap
-
-Switch from manual vendoring to a git submodule of
-`LastOnionKnight/GearGoblin-Core`. Cloudflare clones submodules
-during build, so the ProjectReference can resolve through the
-submodule path. This folder (`Services/Core/`) goes away when that
-lands.
+- Balance preset (toggle exists; both modes fall through to
+  Pure-Math).
+- In-game `GG-PLAN:v1:` paste UI (plugin v0.6.6 Plan tab work).
+- Stat-cap math, Akhmorning breakpoint formulas (v0.8.x).

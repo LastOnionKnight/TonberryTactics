@@ -8,6 +8,101 @@ Tonberry Tactics is the web companion to the in-game plugin (formerly
 "GearGoblin", now also "Tonberry Tactics"). From v0.5.5 onward both halves
 ship at the same version number.
 
+## [0.6.5] — 2026-05-14  "Audit lit up"
+
+**Headline:** The Meld Audit panel rows for **Wrong stat**,
+**Under-tier**, and **Overcap** were placeholder stubs through v0.6.4
+— they always rendered `—` with italic "ships next release"
+captions. v0.6.5 wires all three to real logic against the
+`GearGoblin.Core.JobPriorities` per-job tables and
+`GearGoblin.Core.MateriaTiers.CurrentCapTier`. Adds a fourth
+**Sell / replace** verdict row with a click-to-expand per-materia
+breakdown showing piece, slot, current materia, headline, and
+recommended action.
+
+The audit output format deliberately mirrors the plugin's
+`MeldAudit` record (in `GearGoblin/Materia/MeldOptimizer.cs`, lines
+24–67). Both halves now produce the same shape — `Piece`,
+`SlotIndex`, `CurrentMateriaName`, `Headline`, `Detail` — so when
+v0.7.x lifts the optimizer into Core as a shared service, the web
+UI doesn't need to change. Only the source of the audit data does.
+
+Also syncs the vendored `Services/Core/MateriaTiers.cs` to match
+the Core v0.6.4 content where Skill Speed materia prefix was
+corrected from "Piety" to "Quickarm". Pre-v0.6.5 web read Tier
+display strings from the vendored copy that still had the v0.6.3
+"Piety" stub.
+
+### Added
+
+- **Sell / replace audit row** — fourth row in the audit panel,
+  with separator line above. Shows count of materia recommended to
+  extract & replace. When count > 0, a "show breakdown" toggle
+  reveals a per-materia list with piece+slot, current materia
+  (e.g. "Determination XII (+54)"), headline (e.g. "Determination
+  not in DRG priority"), and recommended action (e.g. "→ Replace
+  with priority stat (CRT › DH › DET)").
+- **Wrong stat detection** — iterates equipped pieces' melded
+  materia, canonicalizes stat names via `StatNames.Canonical`, and
+  flags any whose canonical name isn't in
+  `JobPriorities.For(jobAbbr)`. Output: count, plus per-materia
+  finding with "stat not in {JOB} priority" headline.
+- **Under-tier detection** — flags any melded materia whose
+  `Grade < MateriaTiers.CurrentCapTier` (currently XII at Lv 100).
+  Output: count, plus per-materia finding with "Tier {grade} below
+  cap (XII)" headline.
+- **Overcap heuristic** — counts Tier XII melds per stat per piece;
+  flags pieces with 3+ same-stat Tier XII as likely overcapping
+  (per-piece cap is typically ~150, two Tier XII = 108 legit, three
+  overcaps). Output: piece count, plus per-piece finding with
+  "Likely overcap on this piece" headline.
+- **`BuildAuditFindings()` + caching** — single pass over the
+  payload produces all findings; downstream counts and breakdown
+  toggle reuse the cached list, invalidated by
+  `ReferenceEquals(ParsedPayload)` change.
+- **`AuditFinding` private record** — internal shape that mirrors
+  plugin's `MeldAudit` field-for-field where applicable.
+
+### Fixed
+
+- **Materia tier display: Skill Speed prefix** — `Services/Core/MateriaTiers.cs`
+  synced to Core v0.6.4 content. Previously read "Piety Materia XII"
+  for Skill Speed materia because the vendored copy still had the
+  v0.6.3 typo. Now correctly reads "Quickarm Materia XII".
+
+### Changed
+
+- **Audit panel footer note** — "Full audit logic lives in the
+  plugin; web parity ships v0.6.1" → "Audit logic mirrors plugin's
+  MeldAudit format (v0.6.5)".
+- **`TonberryTactics.csproj`** — version `0.6.4 → 0.6.5`,
+  Description rewritten for "Audit lit up".
+- **All in-page version strings** — bumped header badge, footer
+  copy, audit panel badges, `EmitterVersion`/`TtVersion` constants
+  from 0.6.4 → 0.6.5.
+
+### Pairing
+
+- **GearGoblin.Core v0.6.5** — lockstep bump only.
+- **GearGoblin plugin v0.6.5** — "Crafted Visible". Critical
+  HQ-offset `InventoryReader` fix. Without that, the web continues
+  to receive 3-of-13 piece exports and the new audit logic has
+  almost nothing to analyze.
+
+### What still doesn't work (v0.6.6+)
+
+- **Balance preset.** Toggle exists in UI; both modes currently
+  fall through to Pure-Math. Plugin's `MeldOptimizer` already
+  implements Balance-preset opinions via `JobProfile`; web parity
+  ships when Balance moves into Core (v0.7.x).
+- **No in-game surface for the round-trip plan.** Plan tab in the
+  plugin accepts Etro/XIVGear URLs only — there's no paste box for
+  the `GG-PLAN:v1:` string that this site emits. (v0.6.6 scope.)
+- **Stat-cap math + breakpoint suggestions.** Display only; no
+  Akhmorning formulas. (v0.8.x.)
+
+---
+
 ## [0.6.4] — 2026-05-14  "Vendored Lockstep"
 
 **Headline:** The Materia Advisor finally produces real per-job

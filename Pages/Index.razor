@@ -5,7 +5,7 @@
 @inject IJSRuntime JS
 
 @*
-    Tonberry Tactics v0.6.4 — Index.razor — "Gear Division"
+    Tonberry Tactics v0.6.5 — Index.razor — "Gear Division"
 
     Full design port from Claude Design's React prototype. Every visible
     component (Header, Import dialog, Adventurer card, Gear grid, Stat
@@ -57,7 +57,7 @@
             <img src="assets/onion-shield.png" alt="TLF crest"/>
         </div>
         <div class="version-pill">
-            <div class="v">v 0.6.4</div>
+            <div class="v">v 0.6.5</div>
             <div class="compat">paired with plugin v0.6.0+</div>
         </div>
         <div class="expansion-logo">
@@ -372,7 +372,7 @@
                         <span class="glyph">◇</span>
                         <span>Meld Audit</span>
                         <span class="spacer"></span>
-                        <span class="badge">v0.6.4 derive</span>
+                        <span class="badge">v0.6.5 derive</span>
                     </div>
                     <div class="menu-body">
                         <div class="audit" style="margin:-14px -16px 0;">
@@ -396,23 +396,99 @@
                                 <span class="audit-count @AuditPipClass(AuditEmptyCount())">@AuditEmptyCount()</span>
                             </div>
                             <div class="audit-cell">
-                                <span class="pip ok"></span>
+                                <span class="pip @AuditPipClass(AuditWrongStatCount())"></span>
                                 <span class="audit-label">Wrong stat</span>
-                                <span class="audit-text" style="font-style:italic; color:var(--frost-dim);">Per-job priority via GearGoblin.Core (v0.6.4)</span>
-                                <span class="audit-count">—</span>
+                                <span class="audit-text">
+                                    @if (AuditWrongStatCount() > 0)
+                                    {
+                                        <text>@AuditWrongStatCount() meld(s) on stats outside @JobAbbr() priority</text>
+                                    }
+                                    else if (ParsedPayload != null)
+                                    {
+                                        <text>All melds on priority stats</text>
+                                    }
+                                    else
+                                    {
+                                        <text>—</text>
+                                    }
+                                </span>
+                                <span class="audit-count @AuditPipClass(AuditWrongStatCount())">@AuditWrongStatCount()</span>
                             </div>
                             <div class="audit-cell">
-                                <span class="pip ok"></span>
+                                <span class="pip @AuditPipClass(AuditUnderTierCount())"></span>
                                 <span class="audit-label">Under-tier</span>
-                                <span class="audit-text" style="font-style:italic; color:var(--frost-dim);">Tier-XII detection ships v0.6.1</span>
-                                <span class="audit-count">—</span>
+                                <span class="audit-text">
+                                    @if (AuditUnderTierCount() > 0)
+                                    {
+                                        <text>@AuditUnderTierCount() meld(s) below Tier XII — upgrade for +stat</text>
+                                    }
+                                    else if (ParsedPayload != null)
+                                    {
+                                        <text>All melds at current cap tier</text>
+                                    }
+                                    else
+                                    {
+                                        <text>—</text>
+                                    }
+                                </span>
+                                <span class="audit-count @AuditPipClass(AuditUnderTierCount())">@AuditUnderTierCount()</span>
                             </div>
                             <div class="audit-cell">
-                                <span class="pip ok"></span>
+                                <span class="pip @AuditPipClass(AuditOvercapCount())"></span>
                                 <span class="audit-label">Overcap</span>
-                                <span class="audit-text" style="font-style:italic; color:var(--frost-dim);">Per-piece cap detection ships v0.6.1 (Numatic bug fix)</span>
-                                <span class="audit-count">—</span>
+                                <span class="audit-text">
+                                    @if (AuditOvercapCount() > 0)
+                                    {
+                                        <text>@AuditOvercapCount() piece(s) with 2+ same-stat Tier XII (likely overcapping)</text>
+                                    }
+                                    else if (ParsedPayload != null)
+                                    {
+                                        <text>No likely overcap pieces detected</text>
+                                    }
+                                    else
+                                    {
+                                        <text>—</text>
+                                    }
+                                </span>
+                                <span class="audit-count @AuditPipClass(AuditOvercapCount())">@AuditOvercapCount()</span>
                             </div>
+                            <div class="audit-cell" style="border-top:1px solid var(--border); margin-top:4px; padding-top:10px;">
+                                <span class="pip @AuditPipClass(AuditReplaceCount())"></span>
+                                <span class="audit-label">Sell / replace</span>
+                                <span class="audit-text">
+                                    @if (AuditReplaceCount() > 0)
+                                    {
+                                        <text>@AuditReplaceCount() materia recommended to extract & replace —</text>
+                                        <button type="button" @onclick="ToggleSellBreakdown"
+                                                style="background:none; border:none; color:var(--ship-bright); cursor:pointer; padding:0 0 0 6px; font-family:inherit; font-size:inherit; text-decoration:underline;">
+                                            @(ShowSellBreakdown ? "hide" : "show") breakdown
+                                        </button>
+                                    }
+                                    else if (ParsedPayload != null)
+                                    {
+                                        <text>All melded materia recommended to keep</text>
+                                    }
+                                    else
+                                    {
+                                        <text>—</text>
+                                    }
+                                </span>
+                                <span class="audit-count @AuditPipClass(AuditReplaceCount())">@AuditReplaceCount()</span>
+                            </div>
+                            @if (ShowSellBreakdown && BuildSellBreakdown() is { Count: > 0 } breakdown)
+                            {
+                                <div style="grid-column: 1 / -1; padding:6px 4px 10px; font-family:var(--f-mono); font-size:11px; color:var(--frost); display:flex; flex-direction:column; gap:6px;">
+                                    @foreach (var v in breakdown)
+                                    {
+                                        <div style="display:flex; flex-wrap:wrap; gap:8px; padding:4px 8px; background:var(--bg-2); border-left:2px solid var(--lantern);">
+                                            <span style="color:var(--lantern-dim); min-width:140px;">@v.Piece · slot @(v.SlotIndex + 1)</span>
+                                            <span style="color:var(--frost-dim);">@v.CurrentMateriaName</span>
+                                            <span style="color:var(--warning); flex:1;">@v.Headline</span>
+                                            <span style="color:var(--ship-bright);">@v.Detail</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
                         </div>
                         <div style="padding:12px 4px 2px; display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:11px; color:var(--frost-dim); flex-wrap:wrap; gap:8px;">
                             <span>
@@ -421,7 +497,7 @@
                                 <span style="color:var(--lantern)">● Warn</span> ·
                                 <span style="color:var(--blood-bright)">● Error</span>
                             </span>
-                            <span>Full audit logic lives in the plugin; web parity ships v0.6.1</span>
+                            <span>Audit logic mirrors plugin's MeldAudit format (v0.6.5)</span>
                         </div>
                     </div>
                 </div>
@@ -514,7 +590,7 @@
 
                 @* PLUGIN CALLOUT *@
                 <div class="menu-warm plugin-callout" style="padding:16px 18px;">
-                    <span class="v-tag">◆ Plugin v0.6.4</span>
+                    <span class="v-tag">◆ Plugin v0.6.5</span>
                     <div class="body" style="margin-top:8px;">
                         <strong>The Onion Knight stands ready.</strong>
                         The in-game half of Tonberry Tactics ships in lockstep — installs as a Dalamud plugin, runs the native Character window injection, and pairs with this site via copy-pasteable strings.
@@ -533,7 +609,7 @@
                         <span class="glyph">◇</span>
                         <span>Feedback</span>
                         <span class="spacer"></span>
-                        <span class="badge">v0.6.4</span>
+                        <span class="badge">v0.6.5</span>
                     </div>
                     <div class="menu-body">
                         <div style="font-family:var(--f-serif); font-style:italic; font-size:13px; color:var(--frost-soft); line-height:1.5; margin-bottom:12px;">
@@ -625,7 +701,7 @@
         <span class="glyph">◆</span>
         The Onion Knight stands ready
         <span class="glyph">◆</span>
-        <span class="v">TONBERRY TACTICS · v0.6.4 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
+        <span class="v">TONBERRY TACTICS · v0.6.5 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
     </div>
 
 </div>
@@ -635,8 +711,8 @@
     // ═════════════════════════════════════════════════════════════════
     //  CONSTANTS — version-locked with the plugin (v0.5.5 alignment)
     // ═════════════════════════════════════════════════════════════════
-    private const string EmitterVersion = "0.6.4";
-    private const string TtVersion      = "0.6.4";
+    private const string EmitterVersion = "0.6.5";
+    private const string TtVersion      = "0.6.5";
 
     // ═════════════════════════════════════════════════════════════════
     //  INPUT / OUTPUT + PIPELINE STATE
@@ -835,6 +911,143 @@
         if (ParsedPayload == null) return "ok";
         return count > 4 ? "error" : count > 0 ? "warn" : "ok";
     }
+
+    private string JobAbbr() => ParsedPayload?.Character?.JobAbbreviation ?? "?";
+
+    // v0.6.5 — Real audit logic. Output shape deliberately mirrors the
+    // plugin's MeldAudit record (Piece / PieceName / SlotIndex /
+    // CurrentMateriaName / Severity / Headline / Detail) so a future
+    // consolidation into GearGoblin.Core can swap the source without
+    // changing the UI. Pure-Math severity levels:
+    //   - Wrong stat → Warning (stat outside active job's priority list)
+    //   - Under-tier → Minor   (grade < CurrentCapTier)
+    //   - Overcap    → Warning (piece has 2+ Tier XII melds on same stat)
+    private sealed record AuditFinding(
+        string Piece,
+        int    SlotIndex,
+        string CurrentMateriaName,
+        string Headline,
+        string Detail,
+        bool   IsWrongStat,
+        bool   IsUnderTier,
+        bool   IsOvercap);
+
+    private List<AuditFinding>? cachedFindings;
+    private ExportPayloadV1?    findingsBoundTo;
+
+    private List<AuditFinding> BuildAuditFindings()
+    {
+        if (ParsedPayload == null) return new();
+        if (cachedFindings != null && ReferenceEquals(findingsBoundTo, ParsedPayload))
+            return cachedFindings;
+
+        var findings = new List<AuditFinding>();
+        var jobAbbr  = ParsedPayload.Character?.JobAbbreviation ?? "";
+        var priority = GearGoblin.Core.JobPriorities.For(jobAbbr);
+        var capTier  = GearGoblin.Core.MateriaTiers.CurrentCapTier;
+
+        // Build the set of canonical priority keys for the active job
+        // (for the wrong-stat check). Take all entries — Pure-Math
+        // recommends across the full priority list, so a stat being
+        // outside the list is what makes it "wrong" rather than just
+        // "suboptimal".
+        var priorityKeys = new HashSet<string>(
+            priority.Select(GearGoblin.Core.StatNames.Canonical),
+            StringComparer.Ordinal);
+
+        foreach (var piece in ParsedPayload.Equipped ?? new List<ExportPieceV1>())
+        {
+            if (piece.Materia is not { Count: > 0 }) continue;
+
+            // Per-piece tally for the overcap heuristic — count
+            // Tier-XII materia per canonical stat key. Two+ on the
+            // same stat in the same piece very likely overcaps the
+            // piece's per-stat cap (Tier XII = +54 per slot; most
+            // piece-caps are around +150, two Tier XII = +108
+            // legit, but a third+ would overcap).
+            var perStatCapTier = new Dictionary<string, int>(StringComparer.Ordinal);
+
+            foreach (var m in piece.Materia)
+            {
+                var canonical = GearGoblin.Core.StatNames.Canonical(m.StatName);
+                if (m.Grade >= capTier)
+                {
+                    perStatCapTier[canonical] =
+                        perStatCapTier.TryGetValue(canonical, out var c) ? c + 1 : 1;
+                }
+
+                bool wrongStat = !string.IsNullOrEmpty(canonical) && !priorityKeys.Contains(canonical);
+                bool underTier = m.Grade < capTier;
+
+                if (wrongStat || underTier)
+                {
+                    var headline = wrongStat
+                        ? $"{m.StatName} not in {jobAbbr} priority"
+                        : $"Tier {RomanGrade(m.Grade)} below cap (XII)";
+
+                    var detail = wrongStat
+                        ? $"→ Replace with priority stat ({string.Join(" › ", priority.Take(3))})"
+                        : $"→ Upgrade to Tier XII (+{GearGoblin.Core.MateriaTiers.SubstatValue(capTier)})";
+
+                    findings.Add(new AuditFinding(
+                        Piece:              piece.Slot,
+                        SlotIndex:          m.SlotIndex,
+                        CurrentMateriaName: $"{m.StatName} {RomanGrade(m.Grade)} (+{m.StatValue})",
+                        Headline:           headline,
+                        Detail:             detail,
+                        IsWrongStat:        wrongStat,
+                        IsUnderTier:        underTier,
+                        IsOvercap:          false));
+                }
+            }
+
+            // After scanning the piece's materia, flag overcap pieces
+            // (3+ Tier XII on one stat; 2 is legit double-meld baseline).
+            foreach (var (stat, count) in perStatCapTier)
+            {
+                if (count < 3) continue;
+                findings.Add(new AuditFinding(
+                    Piece:              piece.Slot,
+                    SlotIndex:          -1,
+                    CurrentMateriaName: $"{count}× Tier XII {GearGoblin.Core.StatNames.DisplayName(stat)}",
+                    Headline:           "Likely overcap on this piece",
+                    Detail:             $"→ Extract one and meld a different priority stat",
+                    IsWrongStat:        false,
+                    IsUnderTier:        false,
+                    IsOvercap:          true));
+            }
+        }
+
+        cachedFindings   = findings;
+        findingsBoundTo  = ParsedPayload;
+        return findings;
+    }
+
+    private int AuditWrongStatCount() => BuildAuditFindings().Count(f => f.IsWrongStat);
+    private int AuditUnderTierCount() => BuildAuditFindings().Count(f => f.IsUnderTier);
+    private int AuditOvercapCount()   => BuildAuditFindings().Count(f => f.IsOvercap);
+
+    // Sell/replace count = unique findings (one per problematic materia).
+    // Overcap findings flag the piece, not a specific materia, so they
+    // don't add to the per-materia replace count.
+    private int AuditReplaceCount() =>
+        BuildAuditFindings().Count(f => f.IsWrongStat || f.IsUnderTier);
+
+    private bool ShowSellBreakdown { get; set; }
+    private void ToggleSellBreakdown() => ShowSellBreakdown = !ShowSellBreakdown;
+
+    private List<AuditFinding> BuildSellBreakdown() =>
+        BuildAuditFindings()
+            .Where(f => f.IsWrongStat || f.IsUnderTier || f.IsOvercap)
+            .ToList();
+
+    private static string RomanGrade(int grade) => grade switch
+    {
+        1  => "I",   2  => "II",  3  => "III", 4  => "IV",
+        5  => "V",   6  => "VI",  7  => "VII", 8  => "VIII",
+        9  => "IX",  10 => "X",   11 => "XI",  12 => "XII",
+        _  => grade.ToString(),
+    };
 
     // ═════════════════════════════════════════════════════════════════
     //  ADVISOR — circled-number glyphs for rank

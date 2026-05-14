@@ -110,6 +110,12 @@ public static class MateriaTiers
     /// same materia for any given substat (a Critical Hit materia is a
     /// Critical Hit materia regardless of who melds it), so this is a
     /// pure stat-to-prefix lookup.
+    ///
+    /// <para>v0.6.4 — Skill Speed prefix corrected from "Piety" to
+    /// "Quickarm" (the actual in-game item name). The v0.6.3 stub used
+    /// "Piety" as a placeholder during overnight Core ship; this is
+    /// the proper value. Piety has its own materia ("Piety") and Skill
+    /// Speed has "Quickarm"; the two were transposed.</para>
     /// </summary>
     public static string MateriaPrefix(string statName) =>
         statName?.Trim() switch
@@ -118,24 +124,18 @@ public static class MateriaTiers
             "Direct Hit Rate"  => "Heavens' Eye",
             "Direct Hit"       => "Heavens' Eye",
             "Determination"    => "Savage Might",
-            "Skill Speed"      => "Piety",     // wait — see below
+            "Skill Speed"      => "Quickarm",
             "Spell Speed"      => "Quicktongue",
             "Tenacity"         => "Battledance",
             "Piety"            => "Piety",
             _                   => statName ?? "Generic",
         };
 
-    // NOTE: The Skill Speed prefix above is INCORRECT in the FFXIV
-    // economy — Skill Speed materia is "Quickarm" (not "Piety"), and
-    // Piety has its own materia. The above is a placeholder; will get
-    // corrected to the actual in-game item names in v0.6.4 once the
-    // table is double-checked against a current FFXIV item dump.
-    //
-    // For tonight's overnight Core ship, the optimizer surfaces
-    // "Savage Aim Materia XII" style strings to the user; the prefix
-    // confusion on a less-common stat (Skill Speed appears only on
-    // physical jobs; Spell Speed for casters) is a known-bug stub
-    // tracked for v0.6.4 hotfix.
+    // v0.6.4: Skill Speed prefix now returns the correct in-game item
+    // name ("Quickarm Materia XII") rather than the v0.6.3 placeholder
+    // ("Piety Materia XII"). Web's vendored copy of MateriaTiers.cs is
+    // one Core-content-version behind for the duration of web v0.6.4;
+    // sync happens on web's next release.
 
     /// <summary>
     /// All tiers we have stat values for. Iteration order is 1 → 12.
