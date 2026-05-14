@@ -8,6 +8,114 @@ Tonberry Tactics is the web companion to the in-game plugin (formerly
 "GearGoblin", now also "Tonberry Tactics"). From v0.5.5 onward both halves
 ship at the same version number.
 
+## [0.6.4] — 2026-05-14  "Vendored Lockstep"
+
+**Headline:** The Materia Advisor finally produces real per-job
+recommendations, _and the build actually deploys this time_. v0.6.3
+shipped the right code with the wrong delivery mechanism (a
+`<ProjectReference>` to a sibling Core repo that doesn't exist in
+Cloudflare Pages CI); that deployment failed and was reverted.
+v0.6.4 vendors the three Core files (`StatNames`, `MateriaTiers`,
+`JobPriorities`) into `Services/Core/` with their original
+`GearGoblin.Core` namespace intact. Web builds self-contained;
+plugin keeps its real ProjectReference unchanged; both halves agree
+on namespaces and signatures.
+
+This restores three-way lockstep (Core / web / plugin all at v0.6.4)
+without taking the architectural shortcut that broke CI in v0.6.3.
+
+### Added
+
+- **`Services/Core/StatNames.cs`** — vendored mirror of
+  `GearGoblin.Core/StatNames.cs` v0.6.3. Canonicalize FFXIV substat
+  names ("Critical Hit" / "CRT" / "Critical" → `CRT`). Used by the
+  Materia Advisor for stat-dot styling and stat-totals bucketing.
+- **`Services/Core/MateriaTiers.cs`** — vendored mirror of
+  `GearGoblin.Core/MateriaTiers.cs` v0.6.3. Tier-to-stat-value lookup
+  (Tier XII → +54) and materia-name composition (`Savage Aim Materia XII`).
+  Inherits the known Skill Speed prefix stub (`"Piety"` instead of
+  `"Quickarm"`) from Core; cosmetic-only, tracked for next sync.
+- **`Services/Core/JobPriorities.cs`** — vendored mirror of
+  `GearGoblin.Core/JobPriorities.cs` v0.6.3. Per-job materia priority
+  tables for all 21 combat jobs (plus BLU). Tank / Healer / Melee DPS
+  / Phys Ranged / Mage baselines sourced from public guides at
+  thebalanceffxiv.com (patch 7.x Dawntrail tier).
+- **`Services/Core/VENDORED.md`** — sync-workflow doc. When Core ships
+  a new version, copy these three files over and bump web's version
+  in lockstep.
+
+### Changed
+
+- **`Services/PureMathOptimizer.cs` — rewrite.** Now reads its priority
+  list from `GearGoblin.Core.JobPriorities.For(jobAbbr)` rather than
+  the hardcoded `GnbPriority` array. Materia name + stat value resolve
+  via `Core.MateriaTiers.NameOf()` and `Core.MateriaTiers.SubstatValue()`
+  so both halves agree on what "Tier XII" means. Mode label now reads
+  `"AST priority (via Core)"` on table hit, `"<JOB> fallback (no Core
+  table)"` on miss — instead of always-GNB.
+- **`Pages/Index.razor` — Materia Advisor mode badge.** The
+  apologetic "falling back to GNB priorities (per-job optimizer ships
+  v0.6.1 Core)" text is gone. Tabled jobs see "real <JOB> priority
+  from thebalanceffxiv.com"; un-tabled jobs see "falling back to GNB
+  tank baseline (Core has no table for XYZ)" — honest in the rare
+  case rather than the common case.
+- **`Pages/Index.razor` — stat name matching.** `MateriaStatClass`
+  and `BuildStatCells` now route through a new private
+  `CanonicalStatKey` forwarder to `GearGoblin.Core.StatNames.Canonical`,
+  so plugin-emitted "Critical Hit" / "Direct Hit Rate" / etc. match
+  into the right stat bucket. Pre-v0.6.4 these matched on uppercased
+  three-letter codes only, which is why all stat totals showed `+0`
+  for any payload that came from the plugin emitter.
+- **`Pages/Index.razor` — Meld Audit panel.** The "Per-job priority
+  detection ships v0.6.1" placeholder updated to "Per-job priority
+  via GearGoblin.Core (v0.6.4)" now that the feature actually exists.
+- **`EmitterVersion` and `TtVersion` constants** bumped `0.6.0 → 0.6.4`.
+  Version pill and footer copy bumped accordingly.
+- **`TonberryTactics.csproj`** — version `0.6.0 → 0.6.4`, Description
+  rewritten for "Vendored Lockstep", **no ProjectReference**
+  (vendored Core is in-tree).
+
+### Pairing
+
+Ships in lockstep with:
+
+- **GearGoblin.Core v0.6.4** — content unchanged from v0.6.3 in
+  practice (these three files are byte-identical to Core's v0.6.3
+  vendored copies); version bump exists to keep lockstep with web
+  and plugin.
+- **GearGoblin plugin v0.6.4** — keeps its real `<ProjectReference>`
+  to Core. Plugin's existing `MeldOptimizer` (already job-aware via
+  `JobProfile`) continues to work unchanged; consuming Core's priority
+  tables from the plugin side is an incremental migration tracked for
+  v0.7.x alongside CPR-replacement work.
+
+### Verify after deploy
+
+1. Open https://tonberrytactics.pages.dev. Hard refresh (Ctrl+Shift+R)
+   to bust any stale cached chrome.
+2. Version pill in the top-right of the layout reads **v 0.6.4**.
+   Footer reads `TONBERRY TACTICS · v0.6.4 · CLOUDFLARE PAGES`.
+3. Paste your AST export. Materia Advisor badge should read
+   "real AST priority from thebalanceffxiv.com" (cyan), not
+   "falling back to GNB priorities" (amber).
+4. If your AST has empty meld slots, the recommended fills should
+   reflect healer priority (Crit → DH → DET → SPS → PIE) rather than
+   tank (Crit → DH → DET → SKS → TEN).
+5. Stat Profile panel should show non-zero numbers in Crit / DH / DET
+   / etc. — previously these were all `+0` for plugin payloads because
+   the matching was three-letter-codes-only.
+
+### Notes
+
+- v0.6.3 reverted as commit `86beba2`. v0.6.4 starts from the post-revert
+  state and re-applies the v0.6.3 feature surface via the vendoring
+  approach.
+- v0.7.x will switch from manual vendoring to a git submodule of
+  `LastOnionKnight/GearGoblin-Core`. That's the architecturally proper
+  fix; this approach is the pragmatic v0.6.x bridge.
+
+---
+
 ## [0.6.0] — 2026-05-13  "Gear Division"
 
 **Headline:** Full design port from Claude Design's React prototype.

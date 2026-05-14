@@ -5,7 +5,7 @@
 @inject IJSRuntime JS
 
 @*
-    Tonberry Tactics v0.6.0 — Index.razor — "Gear Division"
+    Tonberry Tactics v0.6.4 — Index.razor — "Gear Division"
 
     Full design port from Claude Design's React prototype. Every visible
     component (Header, Import dialog, Adventurer card, Gear grid, Stat
@@ -57,7 +57,7 @@
             <img src="assets/onion-shield.png" alt="TLF crest"/>
         </div>
         <div class="version-pill">
-            <div class="v">v 0.6.0</div>
+            <div class="v">v 0.6.4</div>
             <div class="compat">paired with plugin v0.6.0+</div>
         </div>
         <div class="expansion-logo">
@@ -328,11 +328,18 @@
                                     <span>
                                         <span class="mode-tag">Mode · @(Optimization?.OptimizationMode ?? "Pure-Math")</span>
                                         <span style="margin-left:10px; font-style:italic;">
-                                            applied via <code class="inline">PureMathOptimizer</code> — GNB priority [Crit › DH › Det]
-                                            @if (ParsedPayload?.Character?.JobAbbreviation is { Length: > 0 } jab && jab != "GNB")
+                                            applied via <code class="inline">PureMathOptimizer</code> + <code class="inline">GearGoblin.Core</code>
+                                            @if (ParsedPayload?.Character?.JobAbbreviation is { Length: > 0 } jab
+                                                 && GearGoblin.Core.JobPriorities.IsTableHit(jab))
+                                            {
+                                                <span style="color:var(--ship-bright); margin-left:8px;">
+                                                    · real @jab priority from thebalanceffxiv.com
+                                                </span>
+                                            }
+                                            else if (ParsedPayload?.Character?.JobAbbreviation is { Length: > 0 } jab2)
                                             {
                                                 <span style="color:var(--warning); margin-left:8px;">
-                                                    · falling back to GNB priorities (per-job optimizer ships v0.6.1 Core)
+                                                    · falling back to GNB tank baseline (Core has no table for @jab2)
                                                 </span>
                                             }
                                         </span>
@@ -365,7 +372,7 @@
                         <span class="glyph">◇</span>
                         <span>Meld Audit</span>
                         <span class="spacer"></span>
-                        <span class="badge">v0.6.0 derive</span>
+                        <span class="badge">v0.6.4 derive</span>
                     </div>
                     <div class="menu-body">
                         <div class="audit" style="margin:-14px -16px 0;">
@@ -391,7 +398,7 @@
                             <div class="audit-cell">
                                 <span class="pip ok"></span>
                                 <span class="audit-label">Wrong stat</span>
-                                <span class="audit-text" style="font-style:italic; color:var(--frost-dim);">Per-job priority detection ships v0.6.1 (Core refactor)</span>
+                                <span class="audit-text" style="font-style:italic; color:var(--frost-dim);">Per-job priority via GearGoblin.Core (v0.6.4)</span>
                                 <span class="audit-count">—</span>
                             </div>
                             <div class="audit-cell">
@@ -507,7 +514,7 @@
 
                 @* PLUGIN CALLOUT *@
                 <div class="menu-warm plugin-callout" style="padding:16px 18px;">
-                    <span class="v-tag">◆ Plugin v0.6.0</span>
+                    <span class="v-tag">◆ Plugin v0.6.4</span>
                     <div class="body" style="margin-top:8px;">
                         <strong>The Onion Knight stands ready.</strong>
                         The in-game half of Tonberry Tactics ships in lockstep — installs as a Dalamud plugin, runs the native Character window injection, and pairs with this site via copy-pasteable strings.
@@ -526,7 +533,7 @@
                         <span class="glyph">◇</span>
                         <span>Feedback</span>
                         <span class="spacer"></span>
-                        <span class="badge">v0.6.0</span>
+                        <span class="badge">v0.6.4</span>
                     </div>
                     <div class="menu-body">
                         <div style="font-family:var(--f-serif); font-style:italic; font-size:13px; color:var(--frost-soft); line-height:1.5; margin-bottom:12px;">
@@ -618,7 +625,7 @@
         <span class="glyph">◆</span>
         The Onion Knight stands ready
         <span class="glyph">◆</span>
-        <span class="v">TONBERRY TACTICS · v0.6.0 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
+        <span class="v">TONBERRY TACTICS · v0.6.4 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
     </div>
 
 </div>
@@ -628,8 +635,8 @@
     // ═════════════════════════════════════════════════════════════════
     //  CONSTANTS — version-locked with the plugin (v0.5.5 alignment)
     // ═════════════════════════════════════════════════════════════════
-    private const string EmitterVersion = "0.6.0";
-    private const string TtVersion      = "0.6.0";
+    private const string EmitterVersion = "0.6.4";
+    private const string TtVersion      = "0.6.4";
 
     // ═════════════════════════════════════════════════════════════════
     //  INPUT / OUTPUT + PIPELINE STATE
@@ -747,7 +754,7 @@
         _ => "◆",
     };
 
-    private string MateriaStatClass(string statName) => statName.ToUpper() switch
+    private string MateriaStatClass(string statName) => CanonicalStatKey(statName) switch
     {
         "CRT"  => "crit",
         "DH"   => "dh",
@@ -758,6 +765,16 @@
         "PIE"  => "pie",
         _      => "",
     };
+
+    // v0.6.4 — Canonicalize stat name. Forwards to Core's shared
+    // StatNames.Canonical helper (vendored at Services/Core/StatNames.cs)
+    // so the plugin and web can't drift on the matching rules. The
+    // plugin emits in-game BaseParam display names ("Critical Hit",
+    // "Direct Hit Rate") and older payloads use three-letter codes
+    // ("CRT", "DH"); both flow through this helper to a canonical
+    // three-letter key the UI's switches match against.
+    private static string CanonicalStatKey(string? statName) =>
+        GearGoblin.Core.StatNames.Canonical(statName);
 
     private int GearSlotCount() => ParsedPayload?.Equipped?.Count ?? 0;
 
@@ -790,7 +807,7 @@
             foreach (var piece in eq)
             foreach (var m in piece.Materia ?? new List<ExportMateriaV1>())
             {
-                var key = m.StatName.ToUpper();
+                var key = CanonicalStatKey(m.StatName);
                 if (totals.ContainsKey(key))
                     totals[key] += m.StatValue;
             }
