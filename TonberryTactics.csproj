@@ -4,17 +4,34 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>0.6.0</Version>
-    <AssemblyVersion>0.6.0.0</AssemblyVersion>
-    <FileVersion>0.6.0.0</FileVersion>
+    <Version>0.6.3</Version>
+    <AssemblyVersion>0.6.3.0</AssemblyVersion>
+    <FileVersion>0.6.3.0</FileVersion>
     <Authors>LastOnionKnight</Authors>
-    <Description>Tonberry Tactics — companion web app for the in-game plugin. AskMrRobot-style hybrid gear optimizer for FFXIV. Pure-Math by default, Balance preset queued, exports plans back to the plugin via GG-PLAN:v1: strings. v0.6.0 ("Gear Division") is the full design port from Claude Design's React prototype: TLF Gear Division masthead with circle-logo crest, onion-shield TLF stamp, Evercold expansion banner, FF dialog-box import section, three-column layout (Adventurer card / center stack / right rail), full gear grid with materia dots, stat profile with cap bars, Materia Advisor with circled-number rec rows, Meld Audit panel, 21-job picker, CSS-animated walking Tonberry footer sprite. Pairs with plugin v0.6.0+ in lockstep. Wire-format prefixes (GG-EXPORT:v1:, GG-PLAN:v1:) unchanged — versioned identifiers, not brand names.</Description>
+    <Description>Tonberry Tactics — companion web app for the in-game plugin. v0.6.3 ("Lockstep") wires up GearGoblin.Core as a shared library so the web and plugin share their stat-priority tables, materia-tier values, and BaseParam name canonicalization. The Materia Advisor now produces real per-job recommendations for all 21 combat jobs (plus BLU) instead of falling back to GNB priority for everyone-not-Gunbreaker. Priorities sourced from public BiS guides at thebalanceffxiv.com. Wire format unchanged. Ships in lockstep with GearGoblin.Core v0.6.3 and plugin v0.6.3.</Description>
     <RepositoryUrl>https://github.com/LastOnionKnight/TonberryTactics</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
+    v0.6.3: ProjectReference to the shared GearGoblin.Core library.
+    Path assumes the standard sibling-of-grandparent layout:
+
+        D:\GearGoblin-Core-v0.1\GearGoblin.Core\        (Core, this reference's target)
+        D:\TonberryTactics-workspace\TonberryTactics\   (this project)
+        D:\GearGoblin-v0.1\GearGoblin\                  (plugin, mirrors this same reference)
+
+    If Core lives somewhere else on your machine, update the path to
+    point at your local clone. The plugin's csproj uses the same
+    relative pattern (..\..\GearGoblin-Core-v0.1\GearGoblin.Core\GearGoblin.Core.csproj)
+    so both halves resolve to the same library on disk.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\GearGoblin-Core-v0.1\GearGoblin.Core\GearGoblin.Core.csproj" />
   </ItemGroup>
 
 </Project>
