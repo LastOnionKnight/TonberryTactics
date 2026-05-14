@@ -57,8 +57,8 @@
             <img src="assets/onion-shield.png" alt="TLF crest"/>
         </div>
         <div class="version-pill">
-            <div class="v">v 0.6.3</div>
-            <div class="compat">paired with plugin v0.6.3+</div>
+            <div class="v">v 0.6.0</div>
+            <div class="compat">paired with plugin v0.6.0+</div>
         </div>
         <div class="expansion-logo">
             <img src="assets/evercold-logo-cropped.png" alt="Final Fantasy XIV: Evercold"/>
@@ -328,18 +328,11 @@
                                     <span>
                                         <span class="mode-tag">Mode · @(Optimization?.OptimizationMode ?? "Pure-Math")</span>
                                         <span style="margin-left:10px; font-style:italic;">
-                                            applied via <code class="inline">PureMathOptimizer</code> +
-                                            <code class="inline">GearGoblin.Core</code> ·
-                                            @if (ParsedPayload?.Character?.JobAbbreviation is { Length: > 0 } jab
-                                                 && GearGoblin.Core.JobPriorities.IsTableHit(jab))
+                                            applied via <code class="inline">PureMathOptimizer</code> — GNB priority [Crit › DH › Det]
+                                            @if (ParsedPayload?.Character?.JobAbbreviation is { Length: > 0 } jab && jab != "GNB")
                                             {
-                                                <text>real @jab priority from </text>
-                                                <code class="inline">thebalanceffxiv.com</code>
-                                            }
-                                            else
-                                            {
-                                                <span style="color:var(--warning);">
-                                                    falling back to GNB tank baseline (Core has no table for @(jab ?? "no job"))
+                                                <span style="color:var(--warning); margin-left:8px;">
+                                                    · falling back to GNB priorities (per-job optimizer ships v0.6.1 Core)
                                                 </span>
                                             }
                                         </span>
@@ -625,7 +618,7 @@
         <span class="glyph">◆</span>
         The Onion Knight stands ready
         <span class="glyph">◆</span>
-        <span class="v">TONBERRY TACTICS · v0.6.3 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
+        <span class="v">TONBERRY TACTICS · v0.6.0 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
     </div>
 
 </div>
@@ -635,8 +628,8 @@
     // ═════════════════════════════════════════════════════════════════
     //  CONSTANTS — version-locked with the plugin (v0.5.5 alignment)
     // ═════════════════════════════════════════════════════════════════
-    private const string EmitterVersion = "0.6.3";
-    private const string TtVersion      = "0.6.3";
+    private const string EmitterVersion = "0.6.0";
+    private const string TtVersion      = "0.6.0";
 
     // ═════════════════════════════════════════════════════════════════
     //  INPUT / OUTPUT + PIPELINE STATE
@@ -754,7 +747,7 @@
         _ => "◆",
     };
 
-    private string MateriaStatClass(string statName) => CanonicalStatKey(statName) switch
+    private string MateriaStatClass(string statName) => statName.ToUpper() switch
     {
         "CRT"  => "crit",
         "DH"   => "dh",
@@ -765,14 +758,6 @@
         "PIE"  => "pie",
         _      => "",
     };
-
-    // v0.6.1 → v0.6.3 — Canonicalize stat name. Forwards to Core's shared
-    // StatNames.Canonical helper so the plugin and web can't drift on the
-    // matching rules. (v0.6.1 had the canonicalization inline here; v0.6.3
-    // moves it to GearGoblin.Core.StatNames and this method becomes a
-    // thin forwarder we kept to minimize the diff in BuildStatCells.)
-    private static string CanonicalStatKey(string? statName) =>
-        GearGoblin.Core.StatNames.Canonical(statName);
 
     private int GearSlotCount() => ParsedPayload?.Equipped?.Count ?? 0;
 
@@ -790,41 +775,22 @@
 
     private List<StatCell> BuildStatCells()
     {
-        // v0.6.2 — role-aware Speed slot. Casters/healers use Spell Speed
-        // (SPS), tanks/melee/phys-ranged use Skill Speed (SKS). They share the
-        // same row position in FFXIV's own character panel (same BaseParam
-        // slot, different stat name) and never overlap on one job. The
-        // v0.6.0/v0.6.1 grid was hardcoded to SKS only, so AST/SCH/WHM/SGE/
-        // BLM/SMN/RDM/PCT with Spell Speed materia saw +0 on every row even
-        // after v0.6.1's CanonicalStatKey fix landed — the SPS bucket
-        // existed in the matching but not in the displayed grid.
-        var jobAbbr           = ParsedPayload?.Character?.JobAbbreviation ?? "";
-        var isCasterOrHealer  = IsCasterOrHealer(jobAbbr);
-        var speedKey          = isCasterOrHealer ? "SPS" : "SKS";
-
-        var statKeys = new[] { "CRT", "DH", "DET", speedKey, "TEN", "PIE" };
+        var statKeys = new[] { "CRT", "DH", "DET", "TEN", "SKS", "PIE" };
         var labels   = new Dictionary<string, string>
         {
             ["CRT"] = "Critical Hit", ["DH"]  = "Direct Hit",
             ["DET"] = "Determination",["TEN"] = "Tenacity",
-            ["SKS"] = "Skill Speed",  ["SPS"] = "Spell Speed",
-            ["PIE"] = "Piety",
+            ["SKS"] = "Skill Speed",  ["PIE"] = "Piety",
         };
-
-        // Init all seven possible buckets so cross-role materia (e.g. a
-        // healer with a stray Skill Speed materia from a shared piece, or
-        // any odd mismatch) is still totalled even if the grid doesn't
-        // currently show that row. Defensive — keeps the math correct.
-        var allKeys = new[] { "CRT", "DH", "DET", "SKS", "SPS", "TEN", "PIE" };
-        var totals  = new Dictionary<string, int>();
-        foreach (var k in allKeys) totals[k] = 0;
+        var totals = new Dictionary<string, int>();
+        foreach (var k in statKeys) totals[k] = 0;
 
         if (ParsedPayload?.Equipped is { } eq)
         {
             foreach (var piece in eq)
             foreach (var m in piece.Materia ?? new List<ExportMateriaV1>())
             {
-                var key = CanonicalStatKey(m.StatName);
+                var key = m.StatName.ToUpper();
                 if (totals.ContainsKey(key))
                     totals[key] += m.StatValue;
             }
@@ -837,16 +803,6 @@
             return new StatCell(labels[k], t > 0 ? $"+{t}" : "—", t, pct);
         }).ToList();
     }
-
-    // v0.6.2 — role detection for the speed-slot pick. Healers and mage DPS
-    // jobs use Spell Speed; everyone else uses Skill Speed.
-    private static bool IsCasterOrHealer(string jobAbbr) =>
-        jobAbbr.ToUpperInvariant() switch
-        {
-            "WHM" or "SCH" or "AST" or "SGE"           => true,  // healers
-            "BLM" or "SMN" or "RDM" or "PCT" or "BLU"  => true,  // mage DPS
-            _                                          => false, // everyone else
-        };
 
     private string StatProfileBadge() => ParsedPayload?.Character is { } c
         ? $"Lv {c.Level} {c.JobAbbreviation} · materia totals only"
