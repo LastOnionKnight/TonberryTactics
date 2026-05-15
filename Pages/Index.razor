@@ -5,7 +5,7 @@
 @inject IJSRuntime JS
 
 @*
-    Tonberry Tactics v0.6.5.1 — Index.razor — "Gear Division"
+    Tonberry Tactics v0.6.5.2 — Index.razor — "Gear Division"
 
     Full design port from Claude Design's React prototype. Every visible
     component (Header, Import dialog, Adventurer card, Gear grid, Stat
@@ -57,11 +57,21 @@
             <img src="assets/onion-shield.png" alt="TLF crest"/>
         </div>
         <div class="version-pill">
-            <div class="v">v 0.6.5.1</div>
+            <div class="v">v 0.6.5.2</div>
             <div class="compat">paired with plugin v0.6.0+</div>
         </div>
         <div class="expansion-logo">
-            <img src="assets/evercold-logo-cropped.png" alt="Final Fantasy XIV: Evercold"/>
+            @* v0.6.5.2 — wordmark now links out to the official FFXIV Evercold expansion page.
+               target="_blank" + rel="noopener noreferrer" follows the standard external-link
+               security pattern: noopener prevents the new tab from controlling our window
+               (window.opener tabnabbing), noreferrer suppresses the Referer header. *@
+            <a href="https://na.finalfantasyxiv.com/evercold/"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="expansion-link"
+               aria-label="Final Fantasy XIV: Evercold — official site (opens in new tab)">
+                <img src="assets/evercold-logo-cropped.png" alt="Final Fantasy XIV: Evercold"/>
+            </a>
             <div class="patch-tag">
                 <span class="dot"></span>
                 <span>Patch 7.5 · Expansion live</span>
@@ -372,7 +382,7 @@
                         <span class="glyph">◇</span>
                         <span>Meld Audit</span>
                         <span class="spacer"></span>
-                        <span class="badge">v0.6.5.1 derive</span>
+                        <span class="badge">v0.6.5.2 derive</span>
                     </div>
                     <div class="menu-body">
                         <div class="audit" style="margin:-14px -16px 0;">
@@ -497,7 +507,7 @@
                                 <span style="color:var(--lantern)">● Warn</span> ·
                                 <span style="color:var(--blood-bright)">● Error</span>
                             </span>
-                            <span>Audit logic mirrors plugin's MeldAudit format (v0.6.5.1)</span>
+                            <span>Audit logic mirrors plugin's MeldAudit format (v0.6.5.2)</span>
                         </div>
                     </div>
                 </div>
@@ -590,7 +600,7 @@
 
                 @* PLUGIN CALLOUT *@
                 <div class="menu-warm plugin-callout" style="padding:16px 18px;">
-                    <span class="v-tag">◆ Plugin v0.6.5.1</span>
+                    <span class="v-tag">◆ Plugin v0.6.5.2</span>
                     <div class="body" style="margin-top:8px;">
                         <strong>The Onion Knight stands ready.</strong>
                         The in-game half of Tonberry Tactics ships in lockstep — installs as a Dalamud plugin, runs the native Character window injection, and pairs with this site via copy-pasteable strings.
@@ -609,7 +619,7 @@
                         <span class="glyph">◇</span>
                         <span>Feedback</span>
                         <span class="spacer"></span>
-                        <span class="badge">v0.6.5.1</span>
+                        <span class="badge">v0.6.5.2</span>
                     </div>
                     <div class="menu-body">
                         <div style="font-family:var(--f-serif); font-style:italic; font-size:13px; color:var(--frost-soft); line-height:1.5; margin-bottom:12px;">
@@ -701,7 +711,7 @@
         <span class="glyph">◆</span>
         The Onion Knight stands ready
         <span class="glyph">◆</span>
-        <span class="v">TONBERRY TACTICS · v0.6.5.1 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
+        <span class="v">TONBERRY TACTICS · v0.6.5.2 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
     </div>
 
 </div>
@@ -711,8 +721,8 @@
     // ═════════════════════════════════════════════════════════════════
     //  CONSTANTS — version-locked with the plugin (v0.5.5 alignment)
     // ═════════════════════════════════════════════════════════════════
-    private const string EmitterVersion = "0.6.5.1";
-    private const string TtVersion      = "0.6.5.1";
+    private const string EmitterVersion = "0.6.5.2";
+    private const string TtVersion      = "0.6.5.2";
 
     // ═════════════════════════════════════════════════════════════════
     //  INPUT / OUTPUT + PIPELINE STATE

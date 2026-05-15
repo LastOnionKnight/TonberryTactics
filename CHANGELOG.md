@@ -8,6 +8,71 @@ Tonberry Tactics is the web companion to the in-game plugin (formerly
 "GearGoblin", now also "Tonberry Tactics"). From v0.5.5 onward both halves
 ship at the same version number.
 
+## [0.6.5.2] — 2026-05-14  "Release Hardening"
+
+**No application-logic changes.** Release-infra patch + small UX
+polish to the header. Web is the component that needed the most
+hardening — its `release.ps1` was the only one of the three without
+a build gate, which is exactly why the v0.6.5.1 first attempt
+managed to ship a broken csproj (`AssemblyVersion=0.6.5.1.0`, 5
+components, fails CS7034) to GitHub before being force-pushed back.
+
+### Fixed
+
+- **`release.ps1`** — adds two steps that Core and Plugin already had
+  (or partially had):
+  1. **Sync with remote.** New step between branch detection and the
+     staging/status display. Runs `git fetch origin <branch>` followed
+     by `git pull --rebase --autostash origin <branch>`. Prevents the
+     non-fast-forward push rejection that hit Web on v0.6.5.1 second
+     attempt (after `git reset --hard HEAD~1` discarded the broken
+     `abc3ff6` locally, the corrected `0c1647c` couldn't push because
+     remote main was still at `abc3ff6` — required a manual
+     `git push --force-with-lease` to recover).
+  2. **Build gate.** New `dotnet build --configuration Release` step
+     between the status display and the commit-message generation.
+     Aborts the release on non-zero exit. Same pattern Core and Plugin
+     have had since v0.4.6. Bypassable with `-SkipBuild` for rare
+     fast-iteration cases. Adds `[switch]$SkipBuild` to the param block.
+
+### Changed
+
+- **`Pages/Index.razor` header** — the EVERCOLD wordmark is now an
+  external link to `https://na.finalfantasyxiv.com/evercold/`. The
+  `<img>` is wrapped in an `<a>` with `target="_blank"` and
+  `rel="noopener noreferrer"` (the standard external-link security
+  pattern: noopener prevents tabnabbing via `window.opener`, noreferrer
+  suppresses the Referer header). `aria-label` describes the link and
+  flags the new-tab behavior for screen readers.
+- **`wwwroot/css/design-v060.css`** — new `.expansion-link` rules.
+  Hover and `:focus-visible` states intensify the existing ice-cyan
+  drop-shadow on the wordmark (from `rgba(126,192,196,0.25)` →
+  `rgba(126,192,196,0.55)`), so the link affordance reads as part of
+  the visual identity rather than a generic browser hyperlink.
+  Keyboard focus also surfaces a 2px ice-cyan ring.
+
+### Pairing
+
+- **GearGoblin.Core v0.6.5.2** — same `git fetch + pull --rebase`
+  preamble added to its release.ps1 for workflow symmetry; lockstep
+  version bump.
+- **GearGoblin plugin v0.6.5.2** — same `git fetch + pull --rebase`
+  preamble added to its release.ps1 specifically to handle the
+  github-actions[bot] repo.json bumps that accumulate after every
+  tag push (the root cause of the v0.6.5.1 plugin push rejection).
+
+### Out of scope (deferred to v0.6.6+)
+
+- Lodestone integration (architecture decision pending: Cloudflare
+  Worker proxy vs XIVAPI/Tomestone third-party vs plugin-only path).
+- Character-panel advisor row offset (plugin-side fix for the
+  in-game ghost overlay; visible in Refia's Viper panel).
+- Plan tab `GG-PLAN:v1:` paste UI (plugin-side; web is already a
+  consumer of the same wire format).
+- Balance preset, stat-cap math, Akhmorning breakpoint formulas.
+
+---
+
 ## [0.6.5.1] — 2026-05-14  "Audit reads right"
 
 **Hotfix.** Fixes an off-by-one in the v0.6.5 audit logic that

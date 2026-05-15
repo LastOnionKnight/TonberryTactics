@@ -23,7 +23,8 @@
 param(
     [switch]$DryRun,
     [string]$Message = "",
-    [switch]$SkipPush
+    [switch]$SkipPush,
+    [switch]$SkipBuild   # v0.6.5.2+: bypass the dotnet build gate (rare; fast-iterate only)
 )
 
 $ErrorActionPreference = "Stop"
@@ -93,6 +94,36 @@ if ($existingTag) {
 $branch = git rev-parse --abbrev-ref HEAD
 Write-Host "  Branch:   $branch" -ForegroundColor White
 
+# ---- 3a. Sync with remote (v0.6.5.2+) ----------------------------------------
+#
+# Fetch and rebase before staging. Even though the web repo doesn't have
+# the plugin's auto-bot pattern (no repo.json equivalent), this matters
+# whenever a CI workflow or a second machine has pushed since our last
+# pull — without this step the final `git push` is rejected as
+# non-fast-forward, exactly the failure mode that hit Web on the v0.6.5.1
+# first attempt (we shipped a broken commit + tag, then had to force-push
+# the recovery commit on top of a state we couldn't reach).
+#
+# --autostash handles the working-tree dropin changes during rebase.
+
+Write-Host "Syncing with origin/$branch (fetch + rebase + autostash)..." -ForegroundColor Cyan
+git fetch origin $branch
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: git fetch failed." -ForegroundColor Red
+    exit 1
+}
+git pull --rebase --autostash origin $branch
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "ERROR: git pull --rebase failed." -ForegroundColor Red
+    Write-Host "If the rebase aborted mid-way (conflict), resolve manually:" -ForegroundColor Yellow
+    Write-Host "  git status   # see what's conflicting" -ForegroundColor Yellow
+    Write-Host "  git rebase --abort   # back out cleanly" -ForegroundColor Yellow
+    Write-Host "Then re-extract the dropin and re-run release.ps1." -ForegroundColor Yellow
+    exit 1
+}
+Write-Host ""
+
 # Show what's staged + unstaged.
 $status = git status --short
 if (-not $status) {
@@ -106,6 +137,38 @@ Write-Host ""
 Write-Host "Changes to be committed:" -ForegroundColor Yellow
 git status --short
 Write-Host ""
+
+# ---- 3.5. Build gate (v0.6.5.2+) ---------------------------------------------
+#
+# `dotnet build --configuration Release` before commit/tag/push. Web's
+# release.ps1 lacked this gate prior to v0.6.5.2 — the v0.6.5.1 first-pass
+# AssemblyVersion regression (`0.6.5.1.0`, 5 components, invalid per CS7034)
+# was caught by Core's and Plugin's gates and aborted both releases cleanly,
+# but Web's gateless script committed + tagged + pushed the broken csproj
+# to GitHub anyway, requiring a manual force-push recovery to clean up.
+# Symmetry with Core and Plugin now: no component releases without a green
+# Release build locally.
+#
+# Configuration is Release (same flavor Cloudflare Pages builds).
+
+if (-not $SkipBuild) {
+    Write-Host "Running build gate: dotnet build --configuration Release..." -ForegroundColor Cyan
+    Write-Host "----------------------------------------" -ForegroundColor DarkGray
+    dotnet build --configuration Release --nologo
+    $buildExit = $LASTEXITCODE
+    Write-Host "----------------------------------------" -ForegroundColor DarkGray
+    if ($buildExit -ne 0) {
+        Write-Host ""
+        Write-Host "ERROR: dotnet build failed (exit code $buildExit)." -ForegroundColor Red
+        Write-Host "Fix the build before releasing. To bypass (NOT recommended), pass -SkipBuild." -ForegroundColor Yellow
+        exit 1
+    }
+    Write-Host "Build gate: OK." -ForegroundColor Green
+    Write-Host ""
+} else {
+    Write-Host "Build gate skipped (-SkipBuild)." -ForegroundColor Yellow
+    Write-Host ""
+}
 
 # ---- 4. Generate commit message from CHANGELOG (if it exists) ----------------
 
