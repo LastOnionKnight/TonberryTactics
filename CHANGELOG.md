@@ -8,6 +8,67 @@ Tonberry Tactics is the web companion to the in-game plugin (formerly
 "GearGoblin", now also "Tonberry Tactics"). From v0.5.5 onward both halves
 ship at the same version number.
 
+## [0.6.5.1] — 2026-05-14  "Audit reads right"
+
+**Hotfix.** Fixes an off-by-one in the v0.6.5 audit logic that
+flagged every Tier XII meld as under-tier and rendered them as "XI".
+
+**Root cause.** The plugin reads materia grade raw from FFXIV's
+`GameInventoryItem.MateriaGrade[i]`, which is 0-indexed: Tier I → 0,
+Tier XII → 11. The wire format passes this raw byte through unchanged.
+The plugin's *internal* `MateriaCatalog.MateriaTier` enum happens to
+be 1-indexed (`Tier12 = 12`), and the plugin's in-game audit converts
+via materia ID lookups rather than raw grade, so the bug doesn't
+manifest in-game (Image 6 from the pre-v0.6.5.1 screenshots correctly
+showed "Det XII (+54)").
+
+The web's vendored `MateriaTiers.CurrentCapTier = 12` (1-indexed) and
+the v0.6.5 audit compared `m.Grade < CurrentCapTier` directly against
+the raw 0-indexed wire value. Result: every Tier XII meld (Grade=11)
+satisfied `11 < 12` → flagged as under-tier, plus `RomanGrade(11)`
+rendered as "XI". A fully-melded gearset produced 20 phantom under-tier
+findings with a phantom "→ Upgrade to Tier XII (+54)" recommendation.
+
+### Fixed
+
+- **`Pages/Index.razor` `BuildAuditFindings()`** — introduced a local
+  `var displayGrade = m.Grade + 1;` at the top of the materia loop,
+  threaded through every comparison and display site:
+  - `if (displayGrade >= capTier)` for the overcap tally (was
+    `m.Grade >= capTier`).
+  - `bool underTier = displayGrade < capTier;` (was `m.Grade`).
+  - `RomanGrade(displayGrade)` in the under-tier headline (was
+    `RomanGrade(m.Grade)`).
+  - `RomanGrade(displayGrade)` in the `CurrentMateriaName` display
+    string (was `RomanGrade(m.Grade)`).
+  Wire format itself is unchanged — the `+1` lives at the consumer.
+  This is intentional: any tool reading existing GG-EXPORT:v1: strings
+  continues to work, and when v0.7.x lifts the optimizer into Core
+  it inherits the same 0-indexed convention.
+
+### Changed
+
+- **`TonberryTactics.csproj`** — version `0.6.5 → 0.6.5.1`, Description
+  rewritten for "Audit reads right".
+- **All in-page version strings** — bumped header badge, footer copy,
+  audit panel badges, `EmitterVersion`/`TtVersion` constants, audit
+  footer note "Audit logic mirrors plugin's MeldAudit format" from
+  v0.6.5 → v0.6.5.1.
+
+### Pairing
+
+- **GearGoblin.Core v0.6.5.1** — lockstep version bump only.
+- **GearGoblin plugin v0.6.5.1** — "Quiet Info". Hotfix for the
+  `/ttinfo` hard-crash that surfaced after v0.6.5 shipped.
+
+### What still doesn't work (v0.6.6+)
+
+- Balance preset (toggle exists; both modes fall through to Pure-Math).
+- In-game `GG-PLAN:v1:` paste UI (plugin v0.6.6).
+- Stat-cap math, Akhmorning breakpoint formulas (v0.8.x).
+
+---
+
 ## [0.6.5] — 2026-05-14  "Audit lit up"
 
 **Headline:** The Meld Audit panel rows for **Wrong stat**,
