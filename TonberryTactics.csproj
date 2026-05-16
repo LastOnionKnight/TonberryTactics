@@ -4,11 +4,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>0.6.5.2</Version>
-    <AssemblyVersion>0.6.5.2</AssemblyVersion>
-    <FileVersion>0.6.5.2</FileVersion>
+    <Version>0.6.5.3</Version>
+    <AssemblyVersion>0.6.5.3</AssemblyVersion>
+    <FileVersion>0.6.5.3</FileVersion>
     <Authors>LastOnionKnight</Authors>
-    <Description>Tonberry Tactics — companion web app for the in-game plugin. AskMrRobot-style hybrid gear optimizer for FFXIV. Pure-Math by default, Balance preset queued, exports plans back to the plugin via GG-PLAN:v1: strings. v0.6.5.2 ("Release Hardening") teaches release.ps1 to (a) fetch + rebase before staging so accumulated upstream commits no longer cause the final git push to be rejected as non-fast-forward, and (b) gate the release on a successful dotnet build (symmetric with Core and Plugin, which have had build gates since v0.4.6 — Web previously lacked one, which is why the v0.6.5.1 first attempt shipped a broken csproj commit + tag to GitHub before being force-pushed back). Also wraps the EVERCOLD wordmark in an external link to the official FFXIV expansion page. No application-logic changes. v0.6.5.1 ("Audit reads right") was the hotfix for the off-by-one Tier display bug introduced in v0.6.5: wire format's Grade field is 0-indexed (Tier XII materia arrives as Grade=11) but the audit was comparing against MateriaTiers.CurrentCapTier (=12, 1-indexed) and feeding the raw 0-indexed value to RomanGrade. Result: every Tier XII meld rendered as "XI" and tripped the under-tier flag with a phantom upgrade recommendation. A fully-melded set produced 20 phantom findings. Fix adds 1 to Grade at the consumer (Index.razor BuildAuditFindings) so the wire format stays unchanged. Pairs with plugin v0.6.5.1 ("Quiet Info") which fixes a latent /ttinfo hard-crash.</Description>
+    <Description>Tonberry Tactics web companion — Blazor WASM single-page app deployed to Cloudflare Pages, consumes GG-EXPORT:v1: strings from the GearGoblin plugin, runs three-column Gear Division layout (Inventory / Best-in-Slot / Meld Audit) per-job, emits GG-PLAN:v1: strings for round-trip import. v0.6.5.3 is a version-only lockstep bump pairing with the plugin's "Collision Fix" hotfix that corrects the character-panel ghost-text bug v0.6.5.2 misdiagnosed. No functional changes to the web app; in-page version strings updated to v0.6.5.3 to keep the displayed pair version honest with the plugin.</Description>
     <RepositoryUrl>https://github.com/LastOnionKnight/TonberryTactics</RepositoryUrl>
   </PropertyGroup>
 

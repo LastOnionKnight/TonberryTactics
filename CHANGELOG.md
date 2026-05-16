@@ -8,6 +8,35 @@ Tonberry Tactics is the web companion to the in-game plugin (formerly
 "GearGoblin", now also "Tonberry Tactics"). From v0.5.5 onward both halves
 ship at the same version number.
 
+## [0.6.5.3] — 2026-05-16  "Collision Fix"
+
+**Headline:** Version-only lockstep bump. No functional changes to the
+web app.
+
+**Pairing with:** Plugin v0.6.5.3 ships the real fix for the
+character-panel ghost-text bug that v0.6.5.2 misdiagnosed. The fix
+adds an `expandCollisionNode` parameter to the plugin's
+`StatusPanelInjector.AddStatRow` (the upstream CharacterPanelRefined
+pattern we'd dropped during adaptation) and removes the v0.6.5.2
+pre-pad block that was making the bug worse. Same plugin release also
+lands four `/goblin` → `/tt` brand-convergence fixes the v0.5.x sweep
+missed in `StatusPanelInjector.cs`. Core (GearGoblin.Core v0.6.5.3)
+is also a version-only bump.
+
+### Web-side changes
+
+In-page version strings updated 0.6.5.2 → 0.6.5.3 across
+`Pages/Index.razor` (file header, version pill, derive badge, audit
+description, plugin-pair tag, footer wordmark, `EmitterVersion` /
+`TtVersion` constants — 9 sites total). The line-64 historical comment
+documenting when the EVERCOLD wordmark link landed correctly stays at
+v0.6.5.2.
+
+No CSS changes, no functional changes to the optimizer, audit, or
+gearset import. Cloudflare Pages auto-deploys this on git push.
+
+---
+
 ## [0.6.5.2] — 2026-05-14  "Release Hardening"
 
 **No application-logic changes.** Release-infra patch + small UX
