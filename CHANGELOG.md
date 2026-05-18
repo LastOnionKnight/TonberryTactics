@@ -8,6 +8,35 @@ Tonberry Tactics is the web companion to the in-game plugin (formerly
 "GearGoblin", now also "Tonberry Tactics"). From v0.5.5 onward both halves
 ship at the same version number.
 
+## [0.6.5.4] — 2026-05-18  "H6 Lockstep"
+
+**Pairing:** GearGoblin plugin v0.6.5.4 + GearGoblin.Core v0.6.5.4.
+
+**Scope:** Version-only lockstep bump — no source changes to the web
+companion. In-page version strings (file header, version pill, derive
+badge, audit description, plugin-pair tag, footer wordmark,
+EmitterVersion/TtVersion constants) all bumped to 0.6.5.4. The v0.6.5.2
+EVERCOLD wordmark-external-link comment is preserved as historical.
+
+**Why this version exists:** The plugin's BUG-001 (Materia Advisor
+header ghost text) remains unfixed after three prior attempts. v0.6.5.4
+is the plugin's fourth swing — testing hypothesis H6 (the cloned label
+cell inherits the original ILVL row's text geometry, and our em-dashed
+"── Materia Advisor ──" label overflows the inherited cell width). The
+plugin also unifies its `/ttinfo` and header-pill version strings under
+a single `ResolveVersion()` resolver. Web travels along to keep the
+trinity in lockstep.
+
+**Versioning note:** Pure-numeric versioning going forward — the letter-
+suffix experiment (plugin v0.6.5.3a) is closed. Caused friction with
+release.ps1 and the github-actions repo.json bot.
+
+**Mobile site:** Slides from its originally-scoped v0.6.5.4 slot to
+v0.6.6. The v0.6.5.x patch stream has been consumed by BUG-001
+stabilization. Mobile work resumes after the panel bug is closed.
+
+---
+
 ## [0.6.5.3] — 2026-05-16  "Collision Fix"
 
 **Headline:** Version-only lockstep bump. No functional changes to the
