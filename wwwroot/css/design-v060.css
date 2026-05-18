@@ -1298,3 +1298,175 @@ image-slot {
   --is-empty-color: var(--frost-dim);
   --is-border: 1px solid var(--bd-pixel-lite);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   v0.6.5.4 IN-PLACE MOBILE PATCH — appended 2026-05-18
+   ═══════════════════════════════════════════════════════════════════
+
+   CSS-only mobile responsiveness. No version bump (the site UI still
+   reads v0.6.5.4 — this is a transparent in-place CSS update). No
+   HTML changes.
+
+   Targets: phones and small tablets (≤768px viewport). Strategy:
+   progressive enhancement. All desktop CSS above is untouched. The
+   block below adds overrides that activate only below 768px.
+
+   What this covers (Tier 1 of TT_MOBILE_AUDIT.md):
+   - Kill the min-width: 1240px that forces horizontal scroll
+   - Collapse three-column .cols grid to single column
+   - Collapse five-column .stat-grid to a mobile-friendly stack
+   - Bump pixel-font sizes for legibility on phones
+   - Min tap-target heights for buttons
+   - Prevent iOS Safari textarea autozoom
+   - Long item names wrap rather than overflow
+
+   What's deferred to a follow-up push (likely v0.6.6 trinity ship):
+   - @media (hover: hover) wrap for the existing :hover rules
+   - :active equivalents for touch feedback
+   - Anchor-tab navigation (requires HTML addition)
+   - True tablet-specific breakpoint
+   - PWA / Add to Home Screen
+   ─────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+
+  /* ═══ Page container — THE critical override ═══ */
+  /* The 1240px floor on .page was the single biggest mobile blocker. */
+  .page {
+    min-width: 0;
+    max-width: 100vw;
+    padding: 16px 12px 60px;
+    overflow-x: hidden;
+  }
+
+  /* ═══ Three-column grid → single column ═══ */
+  .cols {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  /* ═══ Masthead reflow ═══ */
+  .masthead {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+  .crest,
+  .version-pill,
+  .expansion-logo,
+  .tlf-stamp {
+    width: 100%;
+    text-align: center;
+  }
+  .crest {
+    align-items: center;
+  }
+
+  /* ═══ Import / export / feedback dialog tightening ═══ */
+  .dlg {
+    padding: 12px 14px;
+  }
+  .dlg.tight {
+    padding: 8px 12px;
+  }
+
+  /* ═══ Adv portrait sizing — smaller on phones ═══ */
+  .adv-portrait {
+    width: 96px;
+    height: 96px;
+    margin: 0 auto;
+  }
+
+  /* ═══ Stat grid 5-col → 1-col stack ═══ */
+  /* On mobile, every stat row becomes a vertical stack instead of   */
+  /* trying to fit name / bar / value / derive / badge across.       */
+  .stat-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .stat-grid > * {
+    grid-column: 1;
+  }
+
+  /* ═══ Gear inventory — preserve 2-col but wrap long item names ═══ */
+  .gear-item-name {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* ═══ Tap-target floor (iOS HIG 44pt / Material 48dp) ═══ */
+  .btn,
+  .btn.ghost,
+  .btn.copy,
+  .step-fwd,
+  .job-tile,
+  .gear-slot,
+  .advisor-rec {
+    min-height: 44px;
+    padding: 12px 16px;
+  }
+
+  /* ═══ Pixel-font readability bumps ═══ */
+  /* The 7-9px pixel-font aesthetic is illegible at typical phone DPR. */
+  /* Use !important here because these mobile overrides need to win   */
+  /* against the high-specificity desktop rules without us having to  */
+  /* re-replicate the full selector chain. This is the legitimate     */
+  /* @media-breakpoint use of !important.                              */
+  .brand-eyebrow,
+  .brand-sub,
+  .credo .dash,
+  .sec-title::before {
+    font-size: 11px !important;
+  }
+
+  .badge,
+  .v-tag,
+  .compat,
+  .patch-tag,
+  .menu-head .glyph {
+    font-size: 12px !important;
+  }
+
+  /* Footer wordmark — bump but allow wrapping since it's long */
+  .foot .v {
+    font-size: 10px !important;
+    letter-spacing: 1px;
+    line-height: 1.6;
+    word-spacing: 2px;
+  }
+
+  /* ═══ Textarea iOS Safari autozoom prevention ═══ */
+  /* iOS Safari auto-zooms into any input/textarea with font-size <16px */
+  /* on focus. Force ≥16px to skip the autozoom dance.                  */
+  .import-textarea,
+  .export-textarea,
+  textarea,
+  input[type="text"],
+  input[type="email"] {
+    font-size: 16px !important;
+    min-height: 120px;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 20px;
+    min-height: 20px;
+  }
+
+  /* ═══ Job-tile grid (if present) — make tiles touch-sized ═══ */
+  .job-tile {
+    font-size: 14px !important;
+  }
+
+  /* ═══ Suppress decorative pixel-corner positioning at narrow widths ═══ */
+  /* Only if the decorations are causing visible overflow. Leave them on  */
+  /* in 99% of cases — they're inside parent containers and don't bleed.  */
+  /* No rule here yet; reserved for follow-up if mobile testing surfaces  */
+  /* a specific overflow.                                                  */
+
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   End v0.6.5.4 in-place mobile patch
+   ═══════════════════════════════════════════════════════════════════ */
