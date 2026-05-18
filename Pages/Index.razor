@@ -5,7 +5,7 @@
 @inject IJSRuntime JS
 
 @*
-    Tonberry Tactics v0.6.5.4 — Index.razor — "Gear Division"
+    Tonberry Tactics v0.6.6.0 — Index.razor — "Gear Division"
 
     Full design port from Claude Design's React prototype. Every visible
     component (Header, Import dialog, Adventurer card, Gear grid, Stat
@@ -32,6 +32,7 @@
 *@
 
 <HeadContent>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/design-v060.css">
 </HeadContent>
@@ -49,15 +50,16 @@
             <div class="brand-eyebrow">Tonberry Liberation Front · Gear Division</div>
             <h1 class="brand-title">TONBERRY TACTICS</h1>
             <div class="brand-sub">"No gear. No hope. No pants. Just onions."</div>
-            <div class="brand-eorzea" title="Eorzean: Onion of the TLF">
-                ONION · OF · THE · TLF
+            <div class="brand-eorzea">
+                <span class="desktop-only" title="Eorzean: Onion of the TLF">ONION · OF · THE · TLF</span>
+                <span class="mobile-only">ONION · OF · THE · TLF</span>
             </div>
         </div>
         <div class="tlf-stamp">
             <img src="assets/onion-shield.png" alt="TLF crest"/>
         </div>
         <div class="version-pill">
-            <div class="v">v 0.6.5.4</div>
+            <div class="v">v 0.6.6.0</div>
             <div class="compat">paired with plugin v0.6.0+</div>
         </div>
         <div class="expansion-logo">
@@ -132,9 +134,14 @@
     @*  THREE-COLUMN LAYOUT                                             *@
     @* ═══════════════════════════════════════════════════════════════ *@
     <div class="cols">
+        <nav class="mobile-tabs">
+            <a href="#adventurer">Adventurer</a>
+            <a href="#gear">Gear & Stats</a>
+            <a href="#optimizer">Config</a>
+        </nav>
 
         @* ─── LEFT — ADVENTURER CARD ──────────────────────────────── *@
-        <aside>
+        <aside id="adventurer">
             <div class="menu">
                 <div class="menu-head">
                     <span class="glyph">◆</span>
@@ -191,7 +198,7 @@
         </aside>
 
         @* ─── CENTER — GEAR / STATS / ADVISOR / AUDIT ─────────────── *@
-        <main>
+        <main id="gear">
             <div class="stack-loose">
 
                 @* GEARSET *@
@@ -231,6 +238,12 @@
                                                 @for (int i = (piece.Materia?.Count ?? 0); i < piece.MateriaSlotCount; i++)
                                                 {
                                                     <span class="mat-dot empty rec" title="empty (recommended fill)"></span>
+                                                }
+                                            </div>
+                                            <div class="mobile-only" style="font-family: var(--f-mono); font-size: 10px; color: var(--frost-dim); margin-top: 4px; line-height: 1.4;">
+                                                @foreach (var m in piece.Materia ?? new List<ExportMateriaV1>())
+                                                {
+                                                    <div>@m.StatName +@m.StatValue</div>
                                                 }
                                             </div>
                                         </div>
@@ -382,7 +395,7 @@
                         <span class="glyph">◇</span>
                         <span>Meld Audit</span>
                         <span class="spacer"></span>
-                        <span class="badge">v0.6.5.4 derive</span>
+                        <span class="badge">v0.6.6.0 derive</span>
                     </div>
                     <div class="menu-body">
                         <div class="audit" style="margin:-14px -16px 0;">
@@ -507,7 +520,7 @@
                                 <span style="color:var(--lantern)">● Warn</span> ·
                                 <span style="color:var(--blood-bright)">● Error</span>
                             </span>
-                            <span>Audit logic mirrors plugin's MeldAudit format (v0.6.5.4)</span>
+                            <span>Audit logic mirrors plugin's MeldAudit format (v0.6.6.0)</span>
                         </div>
                     </div>
                 </div>
@@ -516,7 +529,7 @@
         </main>
 
         @* ─── RIGHT — OPTIMIZER / EXPORT / PLUGIN / FEEDBACK / MANIFESTO ─ *@
-        <aside>
+        <aside id="optimizer">
             <div class="stack-loose">
 
                 @* OPTIMIZER CONTROLS *@
@@ -600,7 +613,7 @@
 
                 @* PLUGIN CALLOUT *@
                 <div class="menu-warm plugin-callout" style="padding:16px 18px;">
-                    <span class="v-tag">◆ Plugin v0.6.5.4</span>
+                    <span class="v-tag">◆ Plugin v0.6.6.0</span>
                     <div class="body" style="margin-top:8px;">
                         <strong>The Onion Knight stands ready.</strong>
                         The in-game half of Tonberry Tactics ships in lockstep — installs as a Dalamud plugin, runs the native Character window injection, and pairs with this site via copy-pasteable strings.
@@ -619,7 +632,7 @@
                         <span class="glyph">◇</span>
                         <span>Feedback</span>
                         <span class="spacer"></span>
-                        <span class="badge">v0.6.5.4</span>
+                        <span class="badge">v0.6.6.0</span>
                     </div>
                     <div class="menu-body">
                         <div style="font-family:var(--f-serif); font-style:italic; font-size:13px; color:var(--frost-soft); line-height:1.5; margin-bottom:12px;">
@@ -638,11 +651,10 @@
                         </div>
 
                         <div class="h-eyebrow" style="margin-bottom:6px;">▸ Message</div>
-                        <textarea class="export-textarea"
+                        <textarea class="export-textarea feedback-textarea"
                                   @bind="FeedbackText"
                                   @bind:event="oninput"
-                                  placeholder="What happened? What did you expect? What would the lantern do?"
-                                  style="min-height:90px;"></textarea>
+                                  placeholder="What happened? What did you expect? What would the lantern do?"></textarea>
 
                         <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-family:var(--f-mono); font-size:11px; color:var(--frost-soft);">
                             <input type="checkbox" @bind="FeedbackIncludeDiag"/>
@@ -711,7 +723,7 @@
         <span class="glyph">◆</span>
         The Onion Knight stands ready
         <span class="glyph">◆</span>
-        <span class="v">TONBERRY TACTICS · v0.6.5.4 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
+        <span class="v">TONBERRY TACTICS · v0.6.6.0 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
     </div>
 
 </div>
@@ -721,8 +733,8 @@
     // ═════════════════════════════════════════════════════════════════
     //  CONSTANTS — version-locked with the plugin (v0.5.5 alignment)
     // ═════════════════════════════════════════════════════════════════
-    private const string EmitterVersion = "0.6.5.4";
-    private const string TtVersion      = "0.6.5.4";
+    private const string EmitterVersion = "0.6.6.0";
+    private const string TtVersion      = "0.6.6.0";
 
     // ═════════════════════════════════════════════════════════════════
     //  INPUT / OUTPUT + PIPELINE STATE
@@ -1214,3 +1226,4 @@
         return sb.ToString();
     }
 }
+

@@ -4,11 +4,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>0.6.5.4</Version>
-    <AssemblyVersion>0.6.5.4</AssemblyVersion>
-    <FileVersion>0.6.5.4</FileVersion>
+    <Version>0.6.6.0</Version>
+    <AssemblyVersion>0.6.6.0</AssemblyVersion>
+    <FileVersion>0.6.6.0</FileVersion>
     <Authors>LastOnionKnight</Authors>
-    <Description>TonberryTactics web companion (Blazor WASM, deployed to Cloudflare Pages). v0.6.5.4 is a version-only lockstep bump paired with GearGoblin plugin v0.6.5.4 (BUG-001 hypothesis H6 test + /ttinfo version-consistency fix) and GearGoblin.Core v0.6.5.4 (lockstep). No source changes to the web companion in this release. Mobile site work, which had originally been scoped for v0.6.5.4, slides to v0.6.6 — the panel-bug saga has consumed the v0.6.5.x patch stream. In-page version strings (file header, version pill, derive badge, audit description, plugin-pair tag, footer wordmark, EmitterVersion/TtVersion constants) all bumped to 0.6.5.4 to keep the desktop site coherent with the plugin pair.</Description>
+    <Description>TonberryTactics web companion (Blazor WASM, deployed to Cloudflare Pages). v0.6.6.0 is a version-only lockstep bump paired with GearGoblin plugin v0.6.6.0 (BUG-001 hypothesis H6 test + /ttinfo version-consistency fix) and GearGoblin.Core v0.6.6.0 (lockstep). No source changes to the web companion in this release. Mobile site work, which had originally been scoped for v0.6.6.0, slides to v0.6.6 — the panel-bug saga has consumed the v0.6.5.x patch stream. In-page version strings (file header, version pill, derive badge, audit description, plugin-pair tag, footer wordmark, EmitterVersion/TtVersion constants) all bumped to 0.6.6.0 to keep the desktop site coherent with the plugin pair.</Description>
     <RepositoryUrl>https://github.com/LastOnionKnight/TonberryTactics</RepositoryUrl>
   </PropertyGroup>
 
@@ -18,3 +18,4 @@
   </ItemGroup>
 
 </Project>
+
