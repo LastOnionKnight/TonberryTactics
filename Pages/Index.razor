@@ -290,7 +290,7 @@
                                     </div>
                                     <div class="cap-line">
                                         <span>+@s.MateriaTotal materia</span>
-                                        <span>CAP 3,140</span>
+                                        <span></span>
                                     </div>
                                 </div>
                             }
@@ -911,10 +911,11 @@
             }
         }
 
+        var maxTotal = totals.Values.DefaultIfEmpty(0).Max();
         return statKeys.Select(k =>
         {
             var t = totals[k];
-            var pct = Math.Min(100.0, t / 3140.0 * 100.0);
+            var pct = maxTotal > 0 ? Math.Min(100.0, t / (double)maxTotal * 100.0) : 0.0;
             return new StatCell(labels[k], t > 0 ? $"+{t}" : "—", t, pct);
         }).ToList();
     }
