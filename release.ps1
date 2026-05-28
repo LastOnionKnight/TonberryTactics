@@ -55,7 +55,8 @@ Write-Host "  cwd:      $(Get-Location)" -ForegroundColor White
 
 # ---- 2. Read the version from csproj -----------------------------------------
 
-$csprojContent = Get-Content $csproj.FullName -Raw
+$utf8 = New-Object System.Text.UTF8Encoding $false
+$csprojContent = [System.IO.File]::ReadAllText($csproj.FullName, $utf8)
 if ($csprojContent -match "<Version>([\d\.]+)</Version>") {
     $version = $Matches[1]
 } else {
@@ -175,7 +176,8 @@ if (-not $SkipBuild) {
 if (-not $Message) {
     $changelogPath = Join-Path (Get-Location) "CHANGELOG.md"
     if (Test-Path $changelogPath) {
-        $changelog = Get-Content $changelogPath -Raw
+        $utf8 = New-Object System.Text.UTF8Encoding $false
+        $changelog = [System.IO.File]::ReadAllText($changelogPath, $utf8)
         # Match "## [X.Y.Z] - YYYY-MM-DD" through to the next "## [" or EOF.
         # Use [\s\S] for cross-line matching.
         $pattern = "## \[$([regex]::Escape($tagVersion))\][\s\S]*?(?=## \[|\z)"
@@ -231,7 +233,8 @@ Write-Host "Committing..." -ForegroundColor Cyan
 # Write commit message to a temp file so newlines survive PowerShell's
 # argument-parsing layer.
 $msgFile = [System.IO.Path]::GetTempFileName()
-Set-Content -Path $msgFile -Value $Message -Encoding UTF8
+$utf8 = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText($msgFile, $Message, $utf8)
 git commit -F $msgFile
 $commitExit = $LASTEXITCODE
 Remove-Item $msgFile -Force
