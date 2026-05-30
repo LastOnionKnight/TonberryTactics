@@ -18,7 +18,7 @@
     path adjusted for Blazor's wwwroot layout).
 
     C# code-behind preserved from v0.5.5:
-      GearsetParser.TryParse → PureMathOptimizer.Optimize → PlanSerializer.Serialize
+      GearsetParser.TryParse → MeldOptimizerAdapter.Optimize → PlanSerializer.Serialize
       Portrait state machine (Ready/Combat/Danger) drives the .state-tag
 
     Things deliberately deferred to v0.6.1+ (called out so they don't
@@ -254,7 +254,7 @@
                                 <span>Hover a slot to inspect</span>
                                 <span>
                                     <span class="pill ship" style="margin-right:6px">melded · @TotalMateriaCount()</span>
-                                    <span class="pill warn">empty · @(Optimization?.TotalEmptySlots ?? 0)</span>
+                                    <span class="pill warn">empty · @(Optimization?.PlanRecommendations.Count ?? 0)</span>
                                 </span>
                             </div>
                         }
@@ -311,14 +311,14 @@
                         <span class="glyph">◆</span>
                         <span>Materia Advisor</span>
                         <span class="spacer"></span>
-                        @if (Optimization?.Recommendations is { Count: > 0 } recs)
+                        @if (Optimization?.PlanRecommendations is { Count: > 0 } recs)
                         {
                             <span class="pill gold">@recs.Count melds queued</span>
                         }
-                        <span class="badge">@(Optimization?.OptimizationMode ?? "Pure-Math")</span>
+                        <span class="badge">Job Priority (via Core)</span>
                     </div>
                     <div class="menu-body">
-                        @if (Optimization?.Recommendations is { Count: > 0 } recsList)
+                        @if (Optimization?.PlanRecommendations is { Count: > 0 } recsList)
                         {
                             <div class="advisor-list" style="margin:-14px -16px 0;">
                                 @{ int idx = 1; }
@@ -333,25 +333,25 @@
                                             <span class="change">
                                                 <span class="out" style="font-style:italic;">(empty)</span>
                                                 <span style="color:var(--frost-faint)">›</span>
-                                                <span class="in">@rec.MateriaName</span>
+                                                <span class="in">@rec.Materia.Display()</span>
                                             </span>
                                             <span class="pill warn">empty slot</span>
                                             <span class="why">
-                                                Empty guaranteed slot — fill with @rec.StatName priority (+@rec.StatValue @rec.StatName)
+                                                Empty guaranteed slot — fill with @rec.Materia.Stat priority (+@rec.Materia.Value @rec.Materia.Stat)
                                             </span>
                                         </div>
                                         <div class="gain">
-                                            +@rec.StatValue
-                                            <span style="font-family:var(--f-pixel); font-size:7px; letter-spacing:1.5px; color:var(--frost-dim); margin-left:6px; vertical-align:middle;">@rec.StatName</span>
+                                            +@rec.Materia.Value
+                                            <span style="font-family:var(--f-pixel); font-size:7px; letter-spacing:1.5px; color:var(--frost-dim); margin-left:6px; vertical-align:middle;">@rec.Materia.Stat</span>
                                         </div>
                                     </div>
                                     idx++;
                                 }
                                 <div class="advisor-meta">
                                     <span>
-                                        <span class="mode-tag">Mode · @(Optimization?.OptimizationMode ?? "Pure-Math")</span>
+                                        <span class="mode-tag">Mode · Job Priority (via Core)</span>
                                         <span style="margin-left:10px; font-style:italic;">
-                                            applied via <code class="inline">PureMathOptimizer</code> + <code class="inline">GearGoblin.Core</code>
+                                            applied via <code class="inline">MeldOptimizerAdapter</code> + <code class="inline">GearGoblin.Core</code>
                                             @if (ParsedPayload?.Character?.JobAbbreviation is { Length: > 0 } jab
                                                  && GearGoblin.Core.JobPriorities.IsTableHit(jab))
                                             {
@@ -753,7 +753,7 @@
     private string GeneratedImportString = "";
 
     private ExportPayloadV1?          ParsedPayload;
-    private PureMathOptimizer.Result? Optimization;
+    private OptimizerResult? Optimization;
     private string?                   ParseError;
 
     private string OptimizerMode = "Pure-Math";
@@ -799,7 +799,7 @@
         }
         ParsedPayload = parseResult.Payload;
 
-        Optimization = PureMathOptimizer.Optimize(ParsedPayload);
+        Optimization = MeldOptimizerAdapter.Optimize(ParsedPayload);
 
         GeneratedImportString = PlanSerializer.Serialize(
             Optimization, ParsedPayload, EmitterVersion);
@@ -937,7 +937,7 @@
     // ═════════════════════════════════════════════════════════════════
     //  AUDIT HELPERS
     // ═════════════════════════════════════════════════════════════════
-    private int AuditEmptyCount() => Optimization?.TotalEmptySlots ?? 0;
+    private int AuditEmptyCount() => Optimization?.PlanRecommendations.Count ?? 0;
 
     private string AuditPipClass(int count)
     {
@@ -1237,4 +1237,8 @@
         return sb.ToString();
     }
 }
+
+
+
+
 

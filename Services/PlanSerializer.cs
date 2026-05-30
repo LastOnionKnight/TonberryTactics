@@ -1,3 +1,4 @@
+using GearGoblin.Core.Materia;
 using System;
 using System.Linq;
 using System.Text;
@@ -29,17 +30,17 @@ public static class PlanSerializer
     };
 
     public static string Serialize(
-        PureMathOptimizer.Result optimization,
+        OptimizerResult optimization,
         ExportPayloadV1 sourcePayload,
         string emitterVersion)
     {
-        var melds = optimization.Recommendations.Select(r => new PlanMeldV1(
-            Piece:        r.Piece,
+        var melds = optimization.PlanRecommendations.Select(r => new PlanMeldV1(
+            Piece:        r.Piece.ToString(),
             PieceName:    r.PieceName,
             SlotIndex:    r.SlotIndex,
-            MateriaName:  r.MateriaName,
-            StatName:     r.StatName,
-            StatValue:    r.StatValue
+            MateriaName:  r.Materia.Display(),
+            StatName:     r.Materia.Stat.ToString(),
+            StatValue:    r.Materia.Value
         )).ToList();
 
         var plan = new PlanPayloadV1(
@@ -56,3 +57,7 @@ public static class PlanSerializer
         return encoded;
     }
 }
+
+
+
+

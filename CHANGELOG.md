@@ -1,3 +1,7 @@
+## [1.1.0] - 2026-05-30
+### Changed
+- Replaced TonberryTactics' vendored \PureMathOptimizer\ with the consolidated \MeldOptimizer\ from \GearGoblin.Core\.
+- Core lift and math consolidation ensures that Web App and Plugin generate 100% identical recommendations, utilizing \JobPriorities\, \LevelTable\, and \MateriaCatalog\.
 # Changelog
 
 All notable changes to Tonberry Tactics are documented here. Format based on
@@ -902,3 +906,4 @@ by GearGoblin's future `/goblinimport` command.
 
 [0.5.1]: https://github.com/LastOnionKnight/TonberryTactics/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LastOnionKnight/TonberryTactics/releases/tag/v0.5.0
+
