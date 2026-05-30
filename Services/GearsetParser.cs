@@ -71,10 +71,10 @@ public static class GearsetParser
             return new ParseResult(false, null, "Decoded payload was null.");
         }
 
-        if (payload.V != SchemaVersion)
+        if (payload.V != 1 && payload.V != 2)
         {
             return new ParseResult(false, null,
-                $"Schema version mismatch: expected v{SchemaVersion}, got v{payload.V}. " +
+                $"Schema version mismatch: expected v1 or v2, got v{payload.V}. " +
                 "Update Tonberry Tactics or downgrade GearGoblin.");
         }
 
