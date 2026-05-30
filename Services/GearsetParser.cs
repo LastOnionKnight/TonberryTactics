@@ -31,14 +31,16 @@ public static class GearsetParser
 
         var trimmed = clipboardText.Trim();
 
-        if (!trimmed.StartsWith(Prefix, StringComparison.Ordinal))
+        if (!trimmed.StartsWith("GG-EXPORT:v1:", StringComparison.Ordinal) &&
+            !trimmed.StartsWith("GG-EXPORT:v2:", StringComparison.Ordinal))
         {
             return new ParseResult(false, null,
-                $"Expected prefix '{Prefix}' but got '{trimmed[..Math.Min(20, trimmed.Length)]}...'. " +
+                $"Expected prefix 'GG-EXPORT:v1:' or 'v2:' but got '{trimmed[..Math.Min(20, trimmed.Length)]}...'. " +
                 "Did you copy the right string from /goblinexport?");
         }
 
-        var base64 = trimmed[Prefix.Length..];
+        var prefixLength = trimmed.IndexOf(':', 10) + 1;
+        var base64 = trimmed[prefixLength..];
         byte[] jsonBytes;
         try
         {

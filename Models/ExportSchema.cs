@@ -31,7 +31,9 @@ public sealed record ExportPieceV1(
     bool IsHighQuality,
     byte MateriaSlotCount,
     bool IsOvermeldAllowed,
-    List<ExportMateriaV1> Materia);
+    List<ExportMateriaV1> Materia,
+    uint SubstatCap = 0,
+    Dictionary<string, int>? BaseSubstats = null);
 
 public sealed record ExportMateriaV1(
     int SlotIndex,

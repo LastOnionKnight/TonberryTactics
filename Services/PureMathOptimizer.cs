@@ -96,24 +96,52 @@ public static class PureMathOptimizer
 
             totalEmpty += emptySlots;
 
+            var pieceMeldTotals = new Dictionary<string, int>();
+            if (piece.Materia != null)
+            {
+                foreach (var m in piece.Materia)
+                {
+                    pieceMeldTotals.TryGetValue(m.StatName, out var v);
+                    pieceMeldTotals[m.StatName] = v + m.StatValue;
+                }
+            }
+
             for (int i = 0; i < emptySlots; i++)
             {
                 int slotIndex = filledSlots + i;
 
-                // Rotate through the priority list once per slot to
-                // spread melds across stats rather than dumping every
-                // slot into Crit. Real BiS often DOES dump into Crit,
-                // but the rotation produces a more varied baseline
-                // until stat-cap math lands.
-                var stat = priority[statRotation % priority.Count];
-                statRotation++;
+                string? chosenStat = null;
+                for (int attempts = 0; attempts < priority.Count; attempts++)
+                {
+                    var stat = priority[statRotation % priority.Count];
+                    statRotation++;
+
+                    pieceMeldTotals.TryGetValue(stat, out var currentOnPiece);
+                    var baseOnPiece = 0;
+                    if (piece.BaseSubstats != null)
+                        piece.BaseSubstats.TryGetValue(stat, out baseOnPiece);
+                    
+                    var roomForStat = Math.Max(0, (int)piece.SubstatCap - (currentOnPiece + baseOnPiece));
+                    var actualGain  = Math.Min(recValue, roomForStat);
+                    
+                    // If no cap is provided (SubstatCap == 0) from an old V1 export, blindly allow.
+                    if (piece.SubstatCap == 0 || actualGain > 0)
+                    {
+                        chosenStat = stat;
+                        pieceMeldTotals[stat] = currentOnPiece + recValue;
+                        break;
+                    }
+                }
+
+                if (chosenStat == null)
+                    continue; // All priority stats are capped.
 
                 recs.Add(new Recommendation(
                     Piece:       piece.Slot,
                     PieceName:   piece.Name,
                     SlotIndex:   slotIndex,
-                    MateriaName: MateriaTiers.NameOf(stat, recTier),
-                    StatName:    stat,
+                    MateriaName: MateriaTiers.NameOf(chosenStat, recTier),
+                    StatName:    chosenStat,
                     StatValue:   recValue));
             }
         }
