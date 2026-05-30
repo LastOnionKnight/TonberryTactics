@@ -4,9 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.0.3</Version>
-    <AssemblyVersion>1.0.3</AssemblyVersion>
-    <FileVersion>1.0.3</FileVersion>
+    <Version>1.0.4</Version>
+    <AssemblyVersion>1.0.4</AssemblyVersion>
+    <FileVersion>1.0.4</FileVersion>
     <Authors>LastOnionKnight</Authors>
     <Description>TonberryTactics web companion (Blazor WASM, deployed to Cloudflare Pages). v0.6.7.2 is a version-only lockstep bump for parity with GearGoblin plugin v0.6.7.2 and GearGoblin.Core v0.6.7.2. No functional web changes; in-page version strings (file header, version pill, plugin-pair tag, footer wordmark, EmitterVersion/TtVersion constants) bumped to 0.6.7.2. Audit/derive provenance notes intentionally left at v0.6.6.0 — that logic is unchanged this release.</Description>
     <RepositoryUrl>https://github.com/LastOnionKnight/TonberryTactics</RepositoryUrl>
