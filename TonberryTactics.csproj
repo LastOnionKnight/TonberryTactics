@@ -18,10 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="external\GearGoblin.Core\GearGoblin.Core.csproj" />
+    <ProjectReference Include="external\GearGoblin.Core\GearGoblin.Core\GearGoblin.Core.csproj" />
   </ItemGroup>
 
 </Project>
+
 
 
 
