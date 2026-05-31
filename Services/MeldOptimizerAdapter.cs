@@ -42,7 +42,7 @@ public static class MeldOptimizerAdapter
                     SlotIndex = m.SlotIndex,
                     IsGuaranteed = m.SlotIndex < p.MateriaSlotCount,
                     Current = spec,
-                    SuccessRate = 1.0
+                    SuccessRate = SuccessRateForSlot(m.SlotIndex)
                 });
 
                 if (s != Substat.None)
@@ -64,7 +64,7 @@ public static class MeldOptimizerAdapter
                         SlotIndex = i,
                         IsGuaranteed = i < p.MateriaSlotCount,
                         Current = null,
-                        SuccessRate = 0.0
+                        SuccessRate = SuccessRateForSlot(i)
                     });
                 }
             }
@@ -94,6 +94,16 @@ public static class MeldOptimizerAdapter
 
         return MeldOptimizer.Optimize(pieces, statsSnapshot, mod, profile, WeightMode.BalancePreset);
     }
+
+    private static double SuccessRateForSlot(int slotIndex) => slotIndex switch
+    {
+        0 => 1.00,
+        1 => 1.00,
+        2 => 0.17,
+        3 => 0.10,
+        4 => 0.07,
+        _ => 0.00,
+    };
 }
 
 
