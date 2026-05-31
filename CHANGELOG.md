@@ -1,3 +1,7 @@
+## [1.1.1] - 2026-05-31
+### Changed
+- Converted GearGoblin.Core to a git submodule to resolve a local-path reference error that blocked v1.1.0 from building in CI.
+- Materia Advisor: Corrected substat cap calculation for 2H weapons.
 ## [1.1.0] - 2026-05-30
 ### Changed
 - Replaced TonberryTactics' vendored \PureMathOptimizer\ with the consolidated \MeldOptimizer\ from \GearGoblin.Core\.
@@ -906,4 +910,5 @@ by GearGoblin's future `/goblinimport` command.
 
 [0.5.1]: https://github.com/LastOnionKnight/TonberryTactics/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LastOnionKnight/TonberryTactics/releases/tag/v0.5.0
+
 
