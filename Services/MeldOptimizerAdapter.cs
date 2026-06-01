@@ -92,7 +92,7 @@ public static class MeldOptimizerAdapter
         var statsSnapshot = new StatSnapshot();
         var mod = LevelTable.Get(payload.Character.Level);
 
-        return MeldOptimizer.Optimize(pieces, statsSnapshot, mod, profile, WeightMode.BalancePreset);
+        return MeldOptimizer.Optimize(pieces, statsSnapshot, mod, profile);
     }
 
     private static double SuccessRateForSlot(int slotIndex) => slotIndex switch
