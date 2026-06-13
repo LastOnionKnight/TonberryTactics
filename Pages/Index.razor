@@ -979,34 +979,11 @@
         {
             if (piece.Materia is not { Count: > 0 }) continue;
 
-            // Per-piece tally for the overcap heuristic — count
-            // Tier-XII materia per canonical stat key. Two+ on the
-            // same stat in the same piece very likely overcaps the
-            // piece's per-stat cap (Tier XII = +54 per slot; most
-            // piece-caps are around +150, two Tier XII = +108
-            // legit, but a third+ would overcap).
-            var perStatCapTier = new Dictionary<string, int>(StringComparer.Ordinal);
-
+            // Overcap check logic (using exact SubstatCap and BaseSubstats)
             foreach (var m in piece.Materia)
             {
-                // v0.6.5.1 — Wire format's Grade field is 0-indexed: a Tier XII
-                // materia (highest current cap, Patch 7.x) arrives as Grade=11
-                // because the plugin reads it raw from FFXIV's
-                // GameInventoryItem.MateriaGrade[i], which uses the game's
-                // 0-based tier index. Core's MateriaTiers.CurrentCapTier is
-                // 1-indexed (=12 for Tier XII), and RomanGrade was being
-                // handed the raw 0-indexed value, rendering Tier XII as "XI"
-                // and flagging every Tier XII meld as under-tier. Add 1 here
-                // — at the consumer — so the wire format itself stays
-                // unchanged and we don't churn the GG-EXPORT:v1: schema.
                 var displayGrade = m.Grade + 1;
-
                 var canonical = GearGoblin.Core.StatNames.Canonical(m.StatName);
-                if (displayGrade >= capTier)
-                {
-                    perStatCapTier[canonical] =
-                        perStatCapTier.TryGetValue(canonical, out var c) ? c + 1 : 1;
-                }
 
                 bool wrongStat = !string.IsNullOrEmpty(canonical) && !priorityKeys.Contains(canonical);
                 bool underTier = displayGrade < capTier;
@@ -1032,21 +1009,65 @@
                         IsOvercap:          false));
                 }
             }
-
-            // After scanning the piece's materia, flag overcap pieces
-            // (3+ Tier XII on one stat; 2 is legit double-meld baseline).
-            foreach (var (stat, count) in perStatCapTier)
+            // Check exact overcap per stat using the unified GearGoblin.Core structure
+            var baseStats = new Dictionary<GearGoblin.Core.Materia.Substat, int>();
+            if (piece.BaseSubstats != null)
             {
-                if (count < 3) continue;
-                findings.Add(new AuditFinding(
-                    Piece:              piece.Slot,
-                    SlotIndex:          -1,
-                    CurrentMateriaName: $"{count}× Tier XII {GearGoblin.Core.StatNames.DisplayName(stat)}",
-                    Headline:           "Likely overcap on this piece",
-                    Detail:             $"→ Extract one and meld a different priority stat",
-                    IsWrongStat:        false,
-                    IsUnderTier:        false,
-                    IsOvercap:          true));
+                foreach (var kvp in piece.BaseSubstats)
+                {
+                    if (Enum.TryParse<GearGoblin.Core.Materia.Substat>(kvp.Key, out var s))
+                        baseStats[s] = kvp.Value;
+                }
+            }
+            
+            var currentMeldStats = new Dictionary<GearGoblin.Core.Materia.Substat, int>();
+            foreach (var m in piece.Materia)
+            {
+                if (Enum.TryParse<GearGoblin.Core.Materia.Substat>(m.StatName, out var s))
+                {
+                    currentMeldStats.TryGetValue(s, out var v);
+                    currentMeldStats[s] = v + m.StatValue;
+                }
+            }
+
+            var meldablePiece = new GearGoblin.Core.Materia.MeldablePiece
+            {
+                Slot = piece.Slot switch
+                {
+                    "Head" => GearGoblin.Core.EquipSlot.Head,
+                    "Body" => GearGoblin.Core.EquipSlot.Body,
+                    "Hands" => GearGoblin.Core.EquipSlot.Hands,
+                    "Legs" => GearGoblin.Core.EquipSlot.Legs,
+                    "Feet" => GearGoblin.Core.EquipSlot.Feet,
+                    "Ears" => GearGoblin.Core.EquipSlot.Earring,
+                    "Neck" => GearGoblin.Core.EquipSlot.Necklace,
+                    "Wrists" => GearGoblin.Core.EquipSlot.Bracelet,
+                    "FingerL" => GearGoblin.Core.EquipSlot.RingLeft,
+                    "FingerR" => GearGoblin.Core.EquipSlot.RingRight,
+                    "MainHand" => GearGoblin.Core.EquipSlot.MainHand,
+                    "OffHand" => GearGoblin.Core.EquipSlot.OffHand,
+                    _ => GearGoblin.Core.EquipSlot.Unknown
+                },
+                SubstatCap = (int)piece.SubstatCap,
+                BaseSubstats = baseStats,
+                CurrentMeldStats = currentMeldStats
+            };
+
+            foreach (var stat in currentMeldStats.Keys)
+            {
+                var room = GearGoblin.Core.Materia.StatCaps.RoomFor(meldablePiece, stat);
+                if (room < 0)
+                {
+                    findings.Add(new AuditFinding(
+                        Piece:              piece.Slot,
+                        SlotIndex:          -1,
+                        CurrentMateriaName: $"{stat.ToString()} is overcapped",
+                        Headline:           $"Stat Overcap ({-room} points)",
+                        Detail:             $"→ Extract and meld a different priority stat",
+                        IsWrongStat:        false,
+                        IsUnderTier:        false,
+                        IsOvercap:          true));
+                }
             }
         }
 
