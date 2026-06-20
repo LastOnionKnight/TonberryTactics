@@ -20,7 +20,7 @@ public static class GearsetParser
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public sealed record ParseResult(bool Success, ExportPayloadV1? Payload, string? Error);
+    public sealed record ParseResult(bool Success, ExportPayloadV2? Payload, string? Error);
 
     public static ParseResult TryParse(string? clipboardText)
     {
@@ -51,11 +51,29 @@ public static class GearsetParser
             return new ParseResult(false, null, $"Payload is not valid base64: {ex.Message}");
         }
 
-        ExportPayloadV1? payload;
+        ExportPayloadV2? payload = null;
         try
         {
             var json = Encoding.UTF8.GetString(jsonBytes);
-            payload = JsonSerializer.Deserialize<ExportPayloadV1>(json, JsonOptions);
+            if (trimmed.StartsWith("GG-EXPORT:v2:"))
+            {
+                payload = JsonSerializer.Deserialize<ExportPayloadV2>(json, JsonOptions);
+            }
+            else
+            {
+                var v1 = JsonSerializer.Deserialize<ExportPayloadV1>(json, JsonOptions);
+                if (v1 != null)
+                {
+                    var charV2 = new ExportCharacterV2(
+                        v1.Character.Job,
+                        v1.Character.JobAbbreviation,
+                        v1.Character.Level,
+                        v1.Character.AverageItemLevel,
+                        new List<TotalStat>()
+                    );
+                    payload = new ExportPayloadV2(v1.V, v1.Plugin, v1.Version, v1.ExportedAt, charV2, v1.Equipped);
+                }
+            }
         }
         catch (JsonException ex)
         {

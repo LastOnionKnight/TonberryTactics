@@ -276,22 +276,19 @@
                         <span class="pill gold">@StatProfileBadge()</span>
                     </div>
                     <div class="menu-body">
-                        <div class="stat-grid">
-                            @foreach (var s in BuildStatCells())
+                        <div class="stat-grid" style="display:flex; flex-direction:column; gap:0;">
+                            @if (ParsedPayload?.Character.TotalStats != null && ParsedPayload.Character.TotalStats.Count > 0)
                             {
-                                <div class="stat-cell">
-                                    <div class="stat-name">@s.Name</div>
-                                    <div class="stat-val">@s.Value</div>
-                                    <div class="stat-deriv">
-                                        <span><b>—</b> v0.6.1+</span>
-                                    </div>
-                                    <div class="stat-cap-bar">
-                                        <div class="fill" style="width:@(s.PercentOfCap)%"></div>
-                                    </div>
-                                    <div class="cap-line">
-                                        <span>+@s.MateriaTotal materia</span>
-                                        <span></span>
-                                    </div>
+                                @foreach (var s in ParsedPayload.Character.TotalStats)
+                                {
+                                    <CapGauge Label="@s.DisplayName" Value="@s.Value" Cap="@s.Cap" />
+                                }
+                            }
+                            else
+                            {
+                                @* Fallback for V1 string: keep old representation or similar. But user says "bars go live when V2 lands." *@
+                                <div style="padding:16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--frost-dim); font-size:14px;">
+                                    Real caps require a v2 export from GearGoblin 0.6.0+.
                                 </div>
                             }
                         </div>
@@ -739,8 +736,7 @@
     private string ExportString          = "";
     private string GeneratedImportString = "";
 
-    private ExportPayloadV1?          ParsedPayload;
-    private OptimizerResult? Optimization;
+    private ExportPayloadV2? ParsedPayload { get; set; }   private OptimizerResult? Optimization;
     private string?                   ParseError;
 
     private string OptimizerMode = "Pure-Math";
@@ -953,7 +949,7 @@
         bool   IsOvercap);
 
     private List<AuditFinding>? cachedFindings;
-    private ExportPayloadV1?    findingsBoundTo;
+    private ExportPayloadV2?    findingsBoundTo;
 
     private List<AuditFinding> BuildAuditFindings()
     {

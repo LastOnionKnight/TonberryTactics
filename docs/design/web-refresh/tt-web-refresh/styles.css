@@ -1,0 +1,69 @@
+/* ============================================================
+   Tonberry Tactics - Web Refresh - Design Tokens
+   Direction: lighter & cleaner ground, subtle pixel accents,
+   glowing gold->cobalt cap-gauges (the signature element).
+   Ground in TLF/Onion brand identity (TlfTheme palette).
+   ============================================================ */
+
+:root {
+  /* ---- GROUND / SURFACES (light, Frost-toned) ---- */
+  --frost-soft:   #EEF3F8;  /* page ground - airy, cool off-white */
+  --frost-dim:    #DCE6EF;  /* panel surface */
+  --frost-faint:  #C9D6E3;  /* hairline / divider */
+  --surface-card: #FFFFFF;  /* raised data cards */
+  --surface-sink: #E3EBF3;  /* inset wells (inputs, gauge tracks) */
+
+  /* ---- INK (text + fine chrome, pulled back from full bg) ---- */
+  --ink-panel:    #1B2A3A;  /* deep navy - headers, primary text */
+  --ink-body:     #2E4257;  /* body text */
+  --ink-muted:    #6B7C8F;  /* captions, secondary */
+  --ink-hairline: #B8C8D6;  /* borders on light ground */
+
+  /* ---- SIGNATURE ACCENTS ---- */
+  --lantern-gold: #C9A227;  /* the signature - primary accent */
+  --gold-bright:  #E5C24E;  /* hover / highlight */
+  --gold-dim:     #8A7320;  /* pressed / low-emphasis gold */
+  --cobalt:       #2D6CDF;  /* cool counter-tone - "near cap" */
+  --cobalt-bright:#4A8BFF;  /* cobalt glow peak */
+  --cobalt-deep:  #1B3F8C;  /* cobalt shadow */
+
+  /* ---- STATUS (data semantics) ---- */
+  --status-good:  #3A9D6E;  /* under cap, healthy */
+  --status-warn:  #C9A227;  /* approaching */
+  --status-over:  #C0556B;  /* overcapped / wasted */
+
+  /* ---- GAUGE GLOW (the signature bloom) ---- */
+  --glow-gold:    0 0 12px rgba(229, 194, 78, 0.55);
+  --glow-cobalt:  0 0 16px rgba(74, 139, 255, 0.60);
+
+  /* ---- TYPE STACK ---- */
+  --font-display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --font-body:    "EB Garamond", "Georgia", serif;
+  --font-pixel:   "Press Start 2P", monospace;  /* TINY accents only */
+  --font-data:    "JetBrains Mono", "Cascadia Code", monospace; /* stat numbers */
+
+  /* ---- TYPE SCALE ---- */
+  --t-hero:   clamp(2.6rem, 5vw, 4.2rem);
+  --t-h1:     2.0rem;
+  --t-h2:     1.45rem;
+  --t-body:   1.05rem;
+  --t-small:  0.9rem;
+  --t-pixel:  0.62rem;   /* Press Start 2P runs visually large - keep small */
+
+  /* ---- SPACE / SHAPE ---- */
+  --pad-section: clamp(2rem, 5vw, 4.5rem);
+  --gap:         1.25rem;
+  --radius:      10px;
+  --radius-sm:   6px;
+  --border-pixel: 2px;   /* pixel-lite corner accent width */
+
+  /* ---- MOTION ---- */
+  --ease:     cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-fast: 160ms;
+  --dur:      320ms;
+  --dur-fill: 900ms;     /* gauge fill animation */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur: 0ms; --dur-fill: 0ms; }
+}

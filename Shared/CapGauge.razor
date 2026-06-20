@@ -1,0 +1,49 @@
+
+
+<div class="gauge">
+  <div class="gauge-head">
+    <span class="gauge-label">@Label</span>
+    <span class="gauge-val">
+      @Value.ToString("N0")
+      <span class="cap">
+        @if (Cap is null) { <text>/ no cap</text> }
+        else if (IsOver) { <text>/ @Cap.Value.ToString("N0") cap · +@(Value - Cap.Value) over</text> }
+        else { <text>/ @Cap.Value.ToString("N0") cap</text> }
+      </span>
+    </span>
+  </div>
+  <div class="gauge-track">
+    <div class="gauge-fill @StateClass" style="width:@(FillPercent)%"></div>
+    @if (Cap is not null)
+    {
+      <div class="cap-tick" style="left:@(CapTickPercent)%"></div>
+    }
+  </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter, EditorRequired] public int Value { get; set; }
+    /// <summary>Null = stat has no cap (e.g. Determination).</summary>
+    [Parameter] public int? Cap { get; set; }
+
+    // Fraction of cap reached (0..1). No-cap stats fill relative to a soft ceiling.
+    private double Ratio => Cap is > 0 ? (double)Value / Cap.Value : 0;
+
+    private bool IsOver => Cap is not null && Value > Cap.Value;
+    private bool IsNear => Cap is not null && !IsOver && Ratio >= 0.90;
+
+    // Bar width: clamp at 100, no-cap stats show relative fill (cap the visual at ~85%).
+    private int FillPercent =>
+        Cap is null ? Math.Min(85, (int)Math.Round(Value / 2780.0 * 100))   // soft reference
+        : Math.Min(100, (int)Math.Round(Ratio * 100));
+
+    // Cap line sits at 100% for normal, slightly inside for over (so the over-fill reads past it).
+    private int CapTickPercent => IsOver ? 99 : 100;
+
+    // State class drives the gradient + glow defined in styles.css.
+    private string StateClass =>
+        IsOver ? "is-over"
+        : IsNear ? "is-near"
+        : "is-mid";
+}

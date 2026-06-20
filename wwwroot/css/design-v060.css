@@ -9,53 +9,72 @@
 }
 
 :root {
-  /* Ink / night */
-  --ink-void:        #03050f;
-  --ink-deep:        #060a28;
-  --ink:             #0c1130;
-  --ink-2:           #14184c;
-  --ink-panel:       #0e1232;
-  --ink-panel-alt:   #161a44;
-  --ink-3:           #1a1f55;
+  /* ---- GROUND / SURFACES (light, Frost-toned) ---- */
+  --frost-soft:   #EEF3F8;  /* page ground - airy, cool off-white */
+  --frost-dim:    #DCE6EF;  /* panel surface */
+  --frost-faint:  #C9D6E3;  /* hairline / divider */
+  --surface-card: #FFFFFF;  /* raised data cards */
+  --surface-sink: #E3EBF3;  /* inset wells (inputs, gauge tracks) */
 
-  /* TLF gold (Onion Knight) */
-  --gold:            #c9b27e;
-  --gold-bright:     #ffd96b;
-  --gold-dim:        #8a7a55;
-  --gold-soft:       #e5cf94;
+  /* ---- INK (text + fine chrome, pulled back from full bg) ---- */
+  --ink-panel:    #1B2A3A;  /* deep navy - headers, primary text */
+  --ink-body:     #2E4257;  /* body text */
+  --ink-muted:    #6B7C8F;  /* captions, secondary */
+  --ink-hairline: #B8C8D6;  /* borders on light ground */
 
-  /* Lantern flame */
-  --lantern:         #f5b95d;
-  --lantern-hot:     #ffce5e;
-  --lantern-glow:    rgba(245,185,93,0.35);
+  /* ---- SIGNATURE ACCENTS ---- */
+  --lantern-gold: #C9A227;  /* the signature - primary accent */
+  --gold-bright:  #E5C24E;  /* hover / highlight */
+  --gold-dim:     #8A7320;  /* pressed / low-emphasis gold */
+  --cobalt:       #2D6CDF;  /* cool counter-tone - "near cap" */
+  --cobalt-bright:#4A8BFF;  /* cobalt glow peak */
+  --cobalt-deep:  #1B3F8C;  /* cobalt shadow */
 
-  /* Tonberry green */
-  --tonberry:        #6b8a3e;
+  /* ---- STATUS (data semantics) ---- */
+  --status-good:  #3A9D6E;  /* under cap, healthy */
+  --status-warn:  #C9A227;  /* approaching */
+  --status-over:  #C0556B;  /* overcapped / wasted */
+
+  /* ---- Legacy mapped to Light Theme ---- */
+  --ink-void:        var(--frost-soft);
+  --ink-deep:        var(--frost-soft);
+  --ink:             var(--surface-card);
+  --ink-2:           var(--surface-sink);
+  --ink-panel-legacy:var(--surface-card);
+  --ink-panel-alt:   var(--surface-card);
+  --ink-3:           var(--surface-sink);
+
+  --gold:            var(--lantern-gold);
+  --gold-soft:       var(--gold-bright);
+
+  --lantern:         var(--lantern-gold);
+  --lantern-hot:     var(--gold-bright);
+  --lantern-glow:    var(--glow-gold);
+
+  --tonberry:        var(--status-good);
   --tonberry-bright: #9bc063;
   --tonberry-deep:   #3d5421;
 
-  /* Steel / silver */
-  --knife:           #d8dde8;
-  --knife-dim:       #7a8aae;
+  --knife:           var(--ink-body);
+  --knife-dim:       var(--ink-muted);
 
-  /* Frost / paper */
-  --frost:           #e8e6d5;
-  --frost-soft:      #c2c5d8;
-  --frost-dim:       #8085a3;
-  --frost-faint:     #4a5176;
+  --frost:           var(--ink-body);
+  
+  /* Already redefined above, just keep legacy references working */
+  /* --frost-soft:      var(--ink-muted); */
+  /* --frost-dim:       var(--ink-hairline); */
+  /* --frost-faint:     var(--frost-faint); */
 
-  /* States */
-  --blood:           #d24545;
+  --blood:           var(--status-over);
   --blood-bright:    #ff6a5e;
-  --ship:            #6db44e;
+  --ship:            var(--status-good);
   --ship-bright:     #8dc880;
-  --ice:             #7ec0c4;
-  --warning:         #d49250;
+  --ice:             var(--cobalt);
+  --warning:         var(--status-warn);
 
-  /* Borders */
-  --bd-pixel:        #2a2f6e;
-  --bd-pixel-lite:   #3a3f8a;
-  --bd-warm:         #5a4a30;
+  --bd-pixel:        var(--ink-hairline);
+  --bd-pixel-lite:   var(--ink-hairline);
+  --bd-warm:         var(--ink-hairline);
 
   /* Type */
   --f-pixel:    'Press Start 2P', monospace;
@@ -70,19 +89,25 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  font-family: var(--f-body);
-  color: var(--frost);
+  font-family: var(--font-body);
+  font-size: var(--t-body);
+  color: var(--ink-body);
+  background: var(--frost-soft);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  font-size: 16px;
-  line-height: 1.5;
-  background:
-    radial-gradient(ellipse 80% 60% at 15% 0%, rgba(60,55,30,0.18), transparent 60%),
-    radial-gradient(ellipse 90% 60% at 85% 100%, rgba(40,40,90,0.30), transparent 60%),
-    linear-gradient(180deg, var(--ink-void) 0%, var(--ink-deep) 35%, var(--ink) 100%);
   background-attachment: fixed;
-  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><filter id='s'><feDropShadow dx='0' dy='1' stdDeviation='0.5' flood-opacity='0.6'/></filter><g filter='url(%23s)'><polygon points='6,4 8,2 14,8 22,16 24,22 22,24 16,22 8,14' fill='%23d8dde8' stroke='%23030510' stroke-width='1'/><rect x='6' y='4' width='3' height='4' transform='rotate(45,7.5,6)' fill='%238a6a3a' stroke='%23030510' stroke-width='0.8'/></g></svg>") 4 4, default;
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><filter id='s'><feDropShadow dx='0' dy='1' stdDeviation='0.5' flood-opacity='0.6'/></filter><g filter='url(%23s)'><polygon points='6,4 8,2 14,8 22,16 24,22 22,24 16,22 8,14' fill='%232E4257' stroke='%23EEF3F8' stroke-width='1'/><rect x='6' y='4' width='3' height='4' transform='rotate(45,7.5,6)' fill='%23C9A227' stroke='%231B2A3A' stroke-width='0.8'/></g></svg>") 4 4, default;
   image-rendering: -webkit-optimize-contrast;
   overflow-x: hidden;
+}
+
+/* subtle lantern-lit atmosphere on the light ground */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(60vw 50vh at 0% 0%, rgba(201,162,39,0.06), transparent 60%),
+    radial-gradient(50vw 40vh at 100% 100%, rgba(45,108,223,0.05), transparent 60%);
 }
 
 body.scanlines::before {
@@ -1540,3 +1565,101 @@ image-slot {
 /* ═══════════════════════════════════════════════════════════════════
    End v0.6.5.4 in-place mobile patch / Phase 2
    ═══════════════════════════════════════════════════════════════════ */
+/* ============================================================
+   Tonberry Tactics - Web Refresh - Design Tokens
+   Direction: lighter & cleaner ground, subtle pixel accents,
+   glowing gold->cobalt cap-gauges (the signature element).
+   Ground in TLF/Onion brand identity (TlfTheme palette).
+   ============================================================ */
+
+:root {
+  /* ---- GROUND / SURFACES (light, Frost-toned) ---- */
+  --frost-soft:   #EEF3F8;  /* page ground - airy, cool off-white */
+  --frost-dim:    #DCE6EF;  /* panel surface */
+  --frost-faint:  #C9D6E3;  /* hairline / divider */
+  --surface-card: #FFFFFF;  /* raised data cards */
+  --surface-sink: #E3EBF3;  /* inset wells (inputs, gauge tracks) */
+
+  /* ---- INK (text + fine chrome, pulled back from full bg) ---- */
+  --ink-panel:    #1B2A3A;  /* deep navy - headers, primary text */
+  --ink-body:     #2E4257;  /* body text */
+  --ink-muted:    #6B7C8F;  /* captions, secondary */
+  --ink-hairline: #B8C8D6;  /* borders on light ground */
+
+  /* ---- SIGNATURE ACCENTS ---- */
+  --lantern-gold: #C9A227;  /* the signature - primary accent */
+  --gold-bright:  #E5C24E;  /* hover / highlight */
+  --gold-dim:     #8A7320;  /* pressed / low-emphasis gold */
+  --cobalt:       #2D6CDF;  /* cool counter-tone - "near cap" */
+  --cobalt-bright:#4A8BFF;  /* cobalt glow peak */
+  --cobalt-deep:  #1B3F8C;  /* cobalt shadow */
+
+  /* ---- STATUS (data semantics) ---- */
+  --status-good:  #3A9D6E;  /* under cap, healthy */
+  --status-warn:  #C9A227;  /* approaching */
+  --status-over:  #C0556B;  /* overcapped / wasted */
+
+  /* ---- GAUGE GLOW (the signature bloom) ---- */
+  --glow-gold:    0 0 12px rgba(229, 194, 78, 0.55);
+  --glow-cobalt:  0 0 16px rgba(74, 139, 255, 0.60);
+
+  /* ---- TYPE STACK ---- */
+  --font-display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --font-body:    "EB Garamond", "Georgia", serif;
+  --font-pixel:   "Press Start 2P", monospace;  /* TINY accents only */
+  --font-data:    "JetBrains Mono", "Cascadia Code", monospace; /* stat numbers */
+
+  /* ---- TYPE SCALE ---- */
+  --t-hero:   clamp(2.6rem, 5vw, 4.2rem);
+  --t-h1:     2.0rem;
+  --t-h2:     1.45rem;
+  --t-body:   1.05rem;
+  --t-small:  0.9rem;
+  --t-pixel:  0.62rem;   /* Press Start 2P runs visually large - keep small */
+
+  /* ---- SPACE / SHAPE ---- */
+  --pad-section: clamp(2rem, 5vw, 4.5rem);
+  --gap:         1.25rem;
+  --radius:      10px;
+  --radius-sm:   6px;
+  --border-pixel: 2px;   /* pixel-lite corner accent width */
+
+  /* ---- MOTION ---- */
+  --ease:     cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-fast: 160ms;
+  --dur:      320ms;
+  --dur-fill: 900ms;     /* gauge fill animation */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur: 0ms; --dur-fill: 0ms; }
+}
+  .gauge { margin-bottom: 1.05rem; }
+  .gauge:last-child { margin-bottom: 0; }
+  .gauge-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem; }
+  .gauge-label { font-family: var(--font-display); font-size: 0.9rem; font-weight: 600; color: var(--ink-panel); letter-spacing: 0.03em; }
+  .gauge-val { font-family: var(--font-data); font-size: 0.82rem; color: var(--ink-body); }
+  .gauge-val .cap { color: var(--ink-muted); }
+  .gauge-track {
+    position: relative; height: 14px; border-radius: 999px;
+    background: var(--surface-sink);
+    box-shadow: inset 0 1px 3px rgba(27,42,58,0.18);
+    overflow: hidden;
+  }
+  .gauge-fill {
+    position: absolute; inset: 0 auto 0 0; height: 100%;
+    border-radius: 999px;
+    /* gold -> cobalt gradient; the further it fills, the more cobalt shows */
+    background: linear-gradient(90deg, var(--gold-bright) 0%, var(--lantern-gold) 45%, var(--cobalt) 100%);
+    transition: width var(--dur-fill) var(--ease);
+  }
+  /* cap proximity states drive the glow */
+  .gauge-fill.is-near  { box-shadow: var(--glow-cobalt); }
+  .gauge-fill.is-mid   { box-shadow: var(--glow-gold); }
+  .gauge-fill.is-over  { background: linear-gradient(90deg, var(--status-over), #9c3b50); box-shadow: 0 0 14px rgba(192,85,107,0.55); }
+  /* the cap tick mark */
+  .gauge-track .cap-tick {
+    position: absolute; top: -2px; bottom: -2px; width: 2px;
+    background: var(--ink-panel); opacity: 0.35;
+  }
+

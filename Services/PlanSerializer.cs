@@ -31,7 +31,7 @@ public static class PlanSerializer
 
     public static string Serialize(
         OptimizerResult optimization,
-        ExportPayloadV1 sourcePayload,
+        ExportPayloadV2 sourcePayload,
         string emitterVersion)
     {
         var melds = optimization.PlanRecommendations.Select(r => new PlanMeldV1(
@@ -43,21 +43,27 @@ public static class PlanSerializer
             StatValue:    r.Materia.Value
         )).ToList();
 
-        var plan = new PlanPayloadV1(
-            V:                SchemaVersion,
-            Plugin:           EmitterName,
-            Version:          emitterVersion,
-            GeneratedAt:      DateTime.UtcNow.ToString("o"),
-            SourceCharacter:  sourcePayload.Character,
-            Melds:            melds);
+        var sourceChar = new ExportCharacterV1(
+            Job: sourcePayload.Character.Job,
+            JobAbbreviation: sourcePayload.Character.JobAbbreviation,
+            Level: sourcePayload.Character.Level,
+            AverageItemLevel: sourcePayload.Character.AverageItemLevel
+        );
 
+        var plan = new PlanPayloadV1(
+            V:           SchemaVersion,
+            Plugin:      "TonberryTactics",
+            Version:     "1.1.4",
+            GeneratedAt: DateTime.UtcNow.ToString("o"),
+            SourceCharacter: sourceChar,
+            Melds:       melds
+        );
         var json    = JsonSerializer.Serialize(plan, JsonOptions);
         var bytes   = Encoding.UTF8.GetBytes(json);
         var encoded = Prefix + Convert.ToBase64String(bytes);
         return encoded;
     }
+
+
+
 }
-
-
-
-

@@ -3,11 +3,30 @@ using System.Collections.Generic;
 namespace TonberryTactics.Models;
 
 // =============================================================================
-// GG-EXPORT:v1: wire-format DTOs. Match the records emitted by
-// GearGoblin/Services/GearsetExporter.cs verbatim. The plugin and web app
-// share this contract; bumping the wire version (v1 -> v2) requires
-// adding new record types here, not mutating these. v0.5.1.
+// GG-EXPORT:v1: / v2: wire-format DTOs. Match the records emitted by
+// GearGoblin/Services/GearsetExporter.cs verbatim. 
 // =============================================================================
+
+public sealed record TotalStat(
+    string DisplayName,
+    int Value,
+    int? Cap
+);
+
+public sealed record ExportPayloadV2(
+    int V,
+    string Plugin,
+    string Version,
+    string ExportedAt,
+    ExportCharacterV2 Character,
+    List<ExportPieceV1> Equipped);
+
+public sealed record ExportCharacterV2(
+    uint Job,
+    string JobAbbreviation,
+    int Level,
+    int AverageItemLevel,
+    List<TotalStat> TotalStats);
 
 public sealed record ExportPayloadV1(
     int V,
