@@ -5,7 +5,7 @@
 @inject IJSRuntime JS
 
 @*
-    Tonberry Tactics v1.1.4 — Index.razor — "Gear Division"
+    Tonberry Tactics v1.3.0 — Index.razor — "Gear Division"
 
     Full design port from Claude Design's React prototype. Every visible
     component (Header, Import dialog, Adventurer card, Gear grid, Stat
@@ -59,7 +59,7 @@
             <img src="assets/onion-shield.png" alt="TLF crest"/>
         </div>
         <div class="version-pill">
-            <div class="v">v 1.1.4</div>
+            <div class="v">v 1.2.1</div>
             <div class="compat">paired with plugin v0.6.0+</div>
         </div>
         <div class="expansion-logo">
@@ -101,7 +101,7 @@
                 <span class="kanji">— stab once, stab true —</span>
             </button>
         </div>
-        <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-family:var(--f-mono); font-size:11px; color:var(--frost-dim);">
+        <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-family:var(--f-mono); font-size:11px; color:var(--ink-muted);">
             @if (ParsedPayload != null)
             {
                 <span class="pill ship">
@@ -164,7 +164,7 @@
                         <li>
                             <span class="k">Job</span>
                             <span class="v">@AdvJob()</span>
-                            <span style="color:var(--frost-dim); font-size:11px; font-family:var(--f-mono);">@AdvJobName()</span>
+                            <span style="color:var(--ink-muted); font-size:11px; font-family:var(--f-mono);">@AdvJobName()</span>
                         </li>
                         <li><span class="k">Level</span> <span class="v">@AdvLevel()</span></li>
                         <li><span class="k">Avg iLvl</span> <span class="v">@AdvIlvl()</span></li>
@@ -177,7 +177,7 @@
                                 }
                                 else
                                 {
-                                    <span style="color:var(--frost-dim)">—</span>
+                                    <span style="color:var(--ink-muted)">—</span>
                                 }
                             </span>
                         </li>
@@ -250,7 +250,7 @@
                                     </div>
                                 }
                             </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 16px; border-top:1px dashed var(--bd-pixel-lite); font-family:var(--f-mono); font-size:11px; color:var(--frost-dim);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 16px; border-top:1px dashed var(--bd-pixel-lite); font-family:var(--f-mono); font-size:11px; color:var(--ink-muted);">
                                 <span>Hover a slot to inspect</span>
                                 <span>
                                     <span class="pill ship" style="margin-right:6px">melded · @TotalMateriaCount()</span>
@@ -260,7 +260,7 @@
                         }
                         else
                         {
-                            <div style="padding:32px 24px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--frost-dim); font-size:14px;">
+                            <div style="padding:32px 24px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--ink-muted); font-size:14px;">
                                 The lantern waits. Paste your gear export above to fill this grid.
                             </div>
                         }
@@ -287,12 +287,12 @@
                             else
                             {
                                 @* Fallback for V1 string: keep old representation or similar. But user says "bars go live when V2 lands." *@
-                                <div style="padding:16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--frost-dim); font-size:14px;">
+                                <div style="padding:16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--ink-muted); font-size:14px;">
                                     Real caps require a v2 export from GearGoblin 0.6.0+.
                                 </div>
                             }
                         </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 4px 2px; font-family:var(--f-mono); font-size:11px; color:var(--frost-dim); flex-wrap:wrap; gap:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 4px 2px; font-family:var(--f-mono); font-size:11px; color:var(--ink-muted); flex-wrap:wrap; gap:10px;">
                             <span>
                                 <span style="display:inline-block; width:8px; height:8px; background:var(--lantern); box-shadow:0 0 6px var(--lantern); margin-right:6px; vertical-align:middle;"></span>
                                 Materia totals from <code class="inline">/ttexport</code>
@@ -329,7 +329,7 @@
                                             <span class="arrow"> → </span>
                                             <span class="change">
                                                 <span class="out" style="font-style:italic;">(empty)</span>
-                                                <span style="color:var(--frost-faint)">›</span>
+                                                <span style="color:var(--ink-hairline)">›</span>
                                                 <span class="in">@rec.Materia.Display()</span>
                                             </span>
                                             <span class="pill warn">empty slot</span>
@@ -339,7 +339,7 @@
                                         </div>
                                         <div class="gain">
                                             +@rec.Materia.Value
-                                            <span style="font-family:var(--f-pixel); font-size:7px; letter-spacing:1.5px; color:var(--frost-dim); margin-left:6px; vertical-align:middle;">@rec.Materia.Stat</span>
+                                            <span style="font-family:var(--f-pixel); font-size:7px; letter-spacing:1.5px; color:var(--ink-muted); margin-left:6px; vertical-align:middle;">@rec.Materia.Stat</span>
                                         </div>
                                     </div>
                                     idx++;
@@ -352,7 +352,7 @@
                                         </span>
                                     </span>
                                     <span style="color:var(--ship-bright)">
-                                        <span style="font-family:var(--f-pixel); font-size:7px; letter-spacing:2px; color:var(--frost-dim); margin-right:8px;">EMPTY</span>
+                                        <span style="font-family:var(--f-pixel); font-size:7px; letter-spacing:2px; color:var(--ink-muted); margin-right:8px;">EMPTY</span>
                                         @recsList.Count slots
                                     </span>
                                 </div>
@@ -360,13 +360,13 @@
                         }
                         else if (ParsedPayload != null)
                         {
-                            <div style="padding:24px 16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--frost-soft); font-size:14px;">
+                            <div style="padding:24px 16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--ink-body); font-size:14px;">
                                 All guaranteed slots filled. The knife is sharp.
                             </div>
                         }
                         else
                         {
-                            <div style="padding:24px 16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--frost-dim); font-size:14px;">
+                            <div style="padding:24px 16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--ink-muted); font-size:14px;">
                                 Paste an export and STEP FORWARD to summon recommendations.
                             </div>
                         }
@@ -484,12 +484,12 @@
                             </div>
                             @if (ShowSellBreakdown && BuildSellBreakdown() is { Count: > 0 } breakdown)
                             {
-                                <div style="grid-column: 1 / -1; padding:6px 4px 10px; font-family:var(--f-mono); font-size:11px; color:var(--frost); display:flex; flex-direction:column; gap:6px;">
+                                <div style="grid-column: 1 / -1; padding:6px 4px 10px; font-family:var(--f-mono); font-size:11px; color:var(--ink-body); display:flex; flex-direction:column; gap:6px;">
                                     @foreach (var v in breakdown)
                                     {
                                         <div style="display:flex; flex-wrap:wrap; gap:8px; padding:4px 8px; background:var(--bg-2); border-left:2px solid var(--lantern);">
                                             <span style="color:var(--lantern-dim); min-width:140px;">@v.Piece · slot @(v.SlotIndex + 1)</span>
-                                            <span style="color:var(--frost-dim);">@v.CurrentMateriaName</span>
+                                            <span style="color:var(--ink-muted);">@v.CurrentMateriaName</span>
                                             <span style="color:var(--warning); flex:1;">@v.Headline</span>
                                             <span style="color:var(--ship-bright);">@v.Detail</span>
                                         </div>
@@ -497,7 +497,7 @@
                                 </div>
                             }
                         </div>
-                        <div style="padding:12px 4px 2px; display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:11px; color:var(--frost-dim); flex-wrap:wrap; gap:8px;">
+                        <div style="padding:12px 4px 2px; display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:11px; color:var(--ink-muted); flex-wrap:wrap; gap:8px;">
                             <span>
                                 Severity:
                                 <span style="color:var(--ship-bright)">● OK</span> ·
@@ -533,7 +533,7 @@
                                 <button class="@(OptimizerMode == "Balance" ? "on" : "")"
                                         @onclick='() => OptimizerMode = "Balance"'>Balance</button>
                             </div>
-                            <div style="margin-top:8px; font-family:var(--f-serif); font-style:italic; font-size:12px; color:var(--frost-dim); line-height:1.5;">
+                            <div style="margin-top:8px; font-family:var(--f-serif); font-style:italic; font-size:12px; color:var(--ink-muted); line-height:1.5;">
                                 @if (OptimizerMode == "Pure-Math")
                                 {
                                     <text>Greedy per-stat priority — </text>
@@ -578,7 +578,7 @@
                         <span class="badge">GG-PLAN:v1:</span>
                     </div>
                     <div class="menu-body">
-                        <div style="font-family:var(--f-serif); font-size:13px; color:var(--frost-soft); font-style:italic; margin-bottom:10px; line-height:1.5;">
+                        <div style="font-family:var(--f-serif); font-size:13px; color:var(--ink-body); font-style:italic; margin-bottom:10px; line-height:1.5;">
                             Copy and paste into <code class="inline">/ttimport</code> back in-game.
                         </div>
                         <textarea class="export-textarea" readonly value="@GeneratedImportString"
@@ -614,7 +614,7 @@
                         <div style="margin-top:14px;">
                             <a class="btn copy" href="https://newageninjacorps.com/collections/tonberry-liberation-front" target="_blank" rel="noopener noreferrer" style="text-decoration:none; display:inline-block;">Donate a Knife</a>
                         </div>
-                        <div style="margin-top:10px; font-family:var(--f-mono); font-size:10px; color:var(--frost-soft); font-style:italic;">
+                        <div style="margin-top:10px; font-family:var(--f-mono); font-size:10px; color:var(--ink-body); font-style:italic;">
                             Comment "Onion of us." It's not a cult. Probably. The mannequins are watching.
                         </div>
                     </div>
@@ -626,10 +626,10 @@
                         <span class="glyph">◇</span>
                         <span>Feedback</span>
                         <span class="spacer"></span>
-                        <span class="badge">v1.1.4</span>
+                        <span class="badge">v1.3.0</span>
                     </div>
                     <div class="menu-body">
-                        <div style="font-family:var(--f-serif); font-style:italic; font-size:13px; color:var(--frost-soft); line-height:1.5; margin-bottom:12px;">
+                        <div style="font-family:var(--f-serif); font-style:italic; font-size:13px; color:var(--ink-body); line-height:1.5; margin-bottom:12px;">
                             Bug, disagreement, confusion, or just saying hi — drop a line and it'll find Refia.
                         </div>
 
@@ -650,7 +650,7 @@
                                   @bind:event="oninput"
                                   placeholder="What happened? What did you expect? What would the lantern do?"></textarea>
 
-                        <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-family:var(--f-mono); font-size:11px; color:var(--frost-soft);">
+                        <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-family:var(--f-mono); font-size:11px; color:var(--ink-body);">
                             <input type="checkbox" @bind="FeedbackIncludeDiag"/>
                             Include diagnostic info (version, browser, parser state)
                         </label>
@@ -681,11 +681,11 @@
                     <div class="h-eyebrow" style="color:var(--tonberry-bright); margin-bottom:8px;">
                         ◇ TLF Manifesto
                     </div>
-                    <div style="font-family:var(--f-serif); font-size:13px; color:var(--frost-soft); line-height:1.65; font-style:italic;">
+                    <div style="font-family:var(--f-serif); font-size:13px; color:var(--ink-body); line-height:1.65; font-style:italic;">
                         We carry the lantern. We carry the knife. We do not run.
                         We step forward, one slot at a time, until the math is done.
                     </div>
-                    <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap; font-family:var(--f-pixel); font-size:7px; letter-spacing:1.5px; color:var(--frost-dim);">
+                    <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap; font-family:var(--f-pixel); font-size:7px; letter-spacing:1.5px; color:var(--ink-muted);">
                         <span class="pill ice">offline · WASM</span>
                         <span class="pill ice">no backend</span>
                         <span class="pill gold">round-trip · v1</span>
@@ -717,7 +717,7 @@
         <span class="glyph">◆</span>
         The Onion Knight stands ready
         <span class="glyph">◆</span>
-        <span class="v">TONBERRY TACTICS · v1.1.4 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
+        <span class="v">TONBERRY TACTICS · v1.3.0 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
     </div>
 
 </div>
