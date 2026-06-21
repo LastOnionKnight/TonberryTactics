@@ -147,12 +147,38 @@
                   @foreach (var piece in pieces)
                   {
                       <div class="gear-slot">
-                          <div class="ico" style="display:flex;align-items:center;justify-content:center;font-size:14px;">@SlotGlyph(piece.Slot)</div>
-                          <span>
-                              <span class="g-name">@(string.IsNullOrEmpty(piece.Name) ? piece.Slot.ToUpper() : piece.Name)</span><br>
-                              <span class="g-meta">i@(piece.ItemLevel) · @(piece.Materia?.Count ?? 0) melds</span>
-                          </span>
+                          <div class="g-top">
+                              <span class="g-name">@(string.IsNullOrEmpty(piece.Name) ? piece.Slot.ToUpper() : piece.Name)</span>
+                              <span class="g-ilvl">i@(piece.ItemLevel)</span>
+                          </div>
+                          <div class="g-sub">
+                              <span class="g-slot">@piece.Slot</span>
+                              <div class="g-melds">
+                                  @if (piece.Materia is { Count: > 0 })
+                                  {
+                                      @foreach (var m in piece.Materia)
+                                      {
+                                          var code = MateriaIcon(m.StatName);
+                                          <img class="materia-orb" src="assets/materia/@(code).png" onerror="this.onerror=null;this.src='assets/materia/@(code).svg'" alt="@m.StatName" title="@m.StatName" />
+                                      }
+                                  }
+                                  else
+                                  {
+                                      <span class="g-nomeld">no melds</span>
+                                  }
+                              </div>
+                          </div>
                       </div>
+                  }
+              </div>
+              <div class="materia-key" id="materiaKey">
+                  <span class="mk-label">Materia</span>
+                  @foreach (var (stat, code) in MateriaCodes)
+                  {
+                      <span class="mk-item">
+                          <img class="materia-orb" src="assets/materia/@(code).png" onerror="this.onerror=null;this.src='assets/materia/@(code).svg'" alt="@stat" title="@stat" />
+                          @stat.ToUpper()
+                      </span>
                   }
               </div>
           }
@@ -188,15 +214,17 @@
         <div class="panel-bd">
           @if (Optimization?.PlanRecommendations is { Count: > 0 } recsList)
           {
-              <div id="advisorList" style="display:flex;flex-direction:column;gap:8px;">
+              <div id="advisorList">
                   @{ int idx = 1; }
                   @foreach (var rec in recsList)
                   {
-                      <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line-soft);border-radius:7px;background:var(--sink);">
-                          <span style="font-family:var(--f-pixel);font-size:9px;color:var(--gold-bright);">@RomanGrade(idx)</span>
-                          <span style="font-family:var(--f-data);font-size:13px;color:var(--fg);flex:1;">
+                      var code = MateriaIcon(rec.Materia.Stat.ToString());
+                      <div class="advisor-row">
+                          <span class="ad-rank">@RomanGrade(idx)</span>
+                          <img class="materia-orb ad-orb" src="assets/materia/@(code).png" onerror="this.onerror=null;this.src='assets/materia/@(code).svg'" alt="@rec.Materia.Stat.ToString()" title="@rec.Materia.Stat.ToString()" />
+                          <span class="ad-text">
                               @rec.Piece #@(rec.SlotIndex + 1) ← @rec.Materia.Display()
-                              <span style="color:var(--ok);">(@rec.Materia.Value)</span>
+                              <span class="ad-gain">(+@rec.Materia.Value)</span>
                           </span>
                           <span class="chip cobalt">empty slot</span>
                       </div>
@@ -282,14 +310,15 @@
           </p>
           <div class="job-label">Job profile</div>
           <div class="job-grid" id="jobGrid">
-              @foreach (var group in AllJobs.GroupBy(j => j.Role))
+              @foreach (var (abbr, role) in AllJobs)
               {
-                  <div class="job-row">
-                      @foreach (var (abbr, role) in group)
-                      {
-                          <div class="job @role @(ActiveJob() == abbr ? "active" : "")" @onclick="@(() => ActiveJobOverride = abbr)">@abbr</div>
-                      }
-                  </div>
+                  var jobColor = JobColors.TryGetValue(abbr, out var c) ? c : "#8a93a0";
+                  <button class="job @role @(ActiveJob() == abbr ? "active" : "")" 
+                          style="--jc: @jobColor"
+                          @onclick="@(() => ActiveJobOverride = abbr)">
+                      <img class="jobstone" src="assets/jobs/@(abbr).png" alt="@abbr" />
+                      <span class="job-abbr">@abbr</span>
+                  </button>
               }
           </div>
           <div class="job-legend">
@@ -315,7 +344,9 @@
       <section class="panel psa">
         <div class="panel-hd"><span class="title">TLF Home for Children Without Knives</span></div>
         <div class="panel-bd">
+          <div class="psa-emblem-wrap"><img class="psa-emblem" src="assets/tlf-flame-logo-768.png" alt="Tonberry Liberation Front" /></div>
           <div class="video-thumb">
+            <img class="vt-sprite" src="assets/rags-action.png" alt="" />
             <span class="v-cap">TLF Home For Children</span>
             <span class="v-sub">Refia Rakkiri · Last Onion Knight</span>
             <span class="play"></span>
@@ -379,11 +410,16 @@
 
 <footer class="site-foot">
   <div class="wrap">
-    <div class="foot-walk">
+    <div class="foot-parade">
       <div class="ground"></div>
-      <div class="walker"><img src="assets/onion-walker.png" alt="The Onion Knight, walking" /></div>
+      <div class="parade-line">
+        @for(int p = 1; p <= 22; p++) {
+          <div class="px"><img src="assets/jobs-px/@(p.ToString("D2")).png" alt="" /></div>
+        }
+      </div>
     </div>
-    <div class="foot-credo">◆ &nbsp; The Onion Knight stands ready &nbsp; ◆</div>
+    <img src="assets/tt-lantern-mark.svg" alt="TLF Emblem" class="foot-emblem" />
+    <div class="foot-credo">◆ <img src="assets/tt-lantern-mark.svg" class="fc-mark" alt="mark"/> The Onion Knight stands ready <img src="assets/tt-lantern-mark.svg" class="fc-mark" alt="mark"/> ◆</div>
     <div class="foot-meta">Tonberry Tactics · v1.4.0 · Cloudflare Pages · No gear · No hope · Just onions</div>
   </div>
 </footer>
@@ -814,6 +850,32 @@
             .Where(f => f.IsWrongStat || f.IsUnderTier || f.IsOvercap)
             .ToList();
 
+    private static string MateriaIcon(string statName)
+    {
+        return statName.Replace(" ", "") switch
+        {
+            "CriticalHit" => "crit",
+            "DirectHit" => "dh",
+            "Determination" => "det",
+            "SkillSpeed" => "sks",
+            "SpellSpeed" => "sps",
+            "Tenacity" => "ten",
+            "Piety" => "pie",
+            _ => "crit"
+        };
+    }
+
+    private static readonly (string Stat, string Code)[] MateriaCodes = new[]
+    {
+        ("Critical Hit", "crit"),
+        ("Direct Hit", "dh"),
+        ("Determination", "det"),
+        ("Skill Speed", "sks"),
+        ("Spell Speed", "sps"),
+        ("Tenacity", "ten"),
+        ("Piety", "pie")
+    };
+
     private static string RomanGrade(int grade) => grade switch
     {
         1  => "I",   2  => "II",  3  => "III", 4  => "IV",
@@ -846,6 +908,17 @@
         ("CRP","crafter"),("BSM","crafter"),("ARM","crafter"),("GSM","crafter"),
         ("LTW","crafter"),("WVR","crafter"),("ALC","crafter"),("CUL","crafter"),
         ("MIN","gatherer"),("BTN","gatherer"),("FSH","gatherer"),
+    };
+
+    private static readonly Dictionary<string, string> JobColors = new()
+    {
+        {"PLD","#A8D2E6"}, {"WAR","#CF2621"}, {"DRK","#D126CC"}, {"GNB","#7E6C3F"},
+        {"WHM","#B4E0CE"}, {"SCH","#8657FF"}, {"AST","#E8D34F"}, {"SGE","#80A0F0"},
+        {"MNK","#D6A02D"}, {"DRG","#4164CD"}, {"NIN","#AF1964"}, {"SAM","#E46D04"}, {"RPR","#965A90"}, {"VPR","#10A04F"},
+        {"BRD","#91BA5E"}, {"MCH","#6EE1D6"}, {"DNC","#E2627A"},
+        {"BLM","#A579D6"}, {"RDM","#E87B7B"}, {"SMN","#2D9B78"}, {"PCT","#F06FB0"},
+        {"CRP","#A98C50"}, {"BSM","#9A9AA0"}, {"ARM","#5B6B78"}, {"GSM","#C9A93B"}, {"LTW","#8B5A2B"}, {"WVR","#B0407E"}, {"ALC","#2E9B86"}, {"CUL","#C77B3B"},
+        {"MIN","#C08A3C"}, {"BTN","#5BA34B"}, {"FSH","#4A8FC0"}
     };
 
     private string ActiveJob() =>
