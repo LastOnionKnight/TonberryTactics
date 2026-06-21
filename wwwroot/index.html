@@ -15,6 +15,25 @@
     <link rel="icon" type="image/svg+xml" href="/assets/tt-icon.svg">
     <link href="TonberryTactics.styles.css" rel="stylesheet" />
     <script type="importmap"></script>
+    <script>
+        (function() {
+            var theme = localStorage.getItem('tt-theme');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+        window.setTheme = function(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('tt-theme', theme);
+        };
+        window.getTheme = function() {
+            return document.documentElement.getAttribute('data-theme') || 'light';
+        };
+    </script>
 </head>
 
 <body>
@@ -31,7 +50,8 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
-   <script src="_framework/blazor.webassembly.js"></script>
+    <script src="js/tt-hero.js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
 <link rel="stylesheet" href="app.css" />
 <link rel="icon" href="favicon.png" />
 </body>

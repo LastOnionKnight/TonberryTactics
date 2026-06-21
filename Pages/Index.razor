@@ -4,731 +4,455 @@
 @using System.Linq
 @inject IJSRuntime JS
 
-@*
-    Tonberry Tactics v1.3.0 — Index.razor — "Gear Division"
-
-    Full design port from Claude Design's React prototype. Every visible
-    component (Header, Import dialog, Adventurer card, Gear grid, Stat
-    profile, Materia Advisor, Audit, Optimizer controls, Export card,
-    Plugin callout, Feedback, Manifesto, Tonberry trail, Footer) mirrors
-    the JSX in app.jsx / chrome.jsx / gear.jsx / advisor.jsx.
-
-    Visual styling is fully external — see wwwroot/css/design-v060.css
-    (34KB, ported verbatim from the prototype with the Eorzea @font-face
-    path adjusted for Blazor's wwwroot layout).
-
-    C# code-behind preserved from v0.5.5:
-      GearsetParser.TryParse → MeldOptimizerAdapter.Optimize → PlanSerializer.Serialize
-      Portrait state machine (Ready/Combat/Danger) drives the .state-tag
-
-    Things deliberately deferred to v0.6.1+ (called out so they don't
-    masquerade as broken):
-      - StatProfile derived rows are "—" (Akhmorning tables ship v0.6.1)
-      - Audit wrong-stat / under-tier / overcap rows show "—"
-        (full audit logic lives in plugin; web parity via Core refactor)
-      - 21-job picker is clickable but the optimizer is still GNB-only
-      - Balance preset is queued (Pure-Math is the only active mode)
-      - The dev-mode Tweaks panel from the prototype is NOT ported
-*@
-
 <HeadContent>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/design-v060.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/design-phase2.css">
 </HeadContent>
 
-<div class="shell">
-
-    @* ═══════════════════════════════════════════════════════════════ *@
-    @*  HEADER — masthead with crest, brand, TLF stamp, version, expac *@
-    @* ═══════════════════════════════════════════════════════════════ *@
-    <header class="masthead">
-        <div class="crest">
-            <img src="assets/circle-logo.png" alt="Tonberry Liberation Front"/>
-        </div>
-        <div>
-            <div class="brand-eyebrow">Tonberry Liberation Front · Gear Division</div>
-            <h1 class="brand-title">TONBERRY TACTICS</h1>
-            <div class="brand-sub">"No gear. No hope. No pants. Just onions."</div>
-            <div class="brand-eorzea">
-                <span class="desktop-only" title="Eorzean: Onion of the TLF">ONION · OF · THE · TLF</span>
-                <span class="mobile-only">ONION · OF · THE · TLF</span>
-            </div>
-        </div>
-        <div class="tlf-stamp">
-            <img src="assets/onion-shield.png" alt="TLF crest"/>
-        </div>
-        <div class="version-pill">
-            <div class="v">v 1.2.1</div>
-            <div class="compat">paired with plugin v0.6.0+</div>
-        </div>
-        <div class="expansion-logo">
-            @* v0.6.5.2 — wordmark now links out to the official FFXIV Evercold expansion page.
-               target="_blank" + rel="noopener noreferrer" follows the standard external-link
-               security pattern: noopener prevents the new tab from controlling our window
-               (window.opener tabnabbing), noreferrer suppresses the Referer header. *@
-            <a href="https://na.finalfantasyxiv.com/evercold/"
-               target="_blank"
-               rel="noopener noreferrer"
-               class="expansion-link"
-               aria-label="Final Fantasy XIV: Evercold — official site (opens in new tab)">
-                <img src="assets/evercold-logo-cropped.png" alt="Final Fantasy XIV: Evercold"/>
-            </a>
-            <div class="patch-tag">
-                <span class="dot"></span>
-                <span>Patch 7.5 · Expansion live</span>
-            </div>
-        </div>
-    </header>
-
-    @* ═══════════════════════════════════════════════════════════════ *@
-    @*  IMPORT SECTION — FF dialog box                                  *@
-    @* ═══════════════════════════════════════════════════════════════ *@
-    <div class="dlg import-dlg">
-        <span class="speaker">ADVENTURER</span>
-        <div class="prompt-line">
-            <span class="em">Step forward.</span>
-            Paste the <code class="inline">GG-EXPORT:v1:</code> string from
-            <span class="em">/ttexport</span> to begin the audit.
-        </div>
-        <div class="import-row">
-            <textarea class="import-textarea"
-                      @bind="ExportString"
-                      @bind:event="oninput"
-                      placeholder="GG-EXPORT:v1:eyJwbHVnaW4iOiJUb25iZXJyeVRhY3RpY3MiLi4u"></textarea>
-            <button class="step-fwd" @onclick="RunOptimization">
-                <span>STEP FORWARD</span>
-                <span class="kanji">— stab once, stab true —</span>
-            </button>
-        </div>
-        <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-family:var(--f-mono); font-size:11px; color:var(--ink-muted);">
-            @if (ParsedPayload != null)
-            {
-                <span class="pill ship">
-                    parsed · @ParsedPayload.Character.JobAbbreviation ·
-                    iLvl @ParsedPayload.Character.AverageItemLevel ·
-                    @ParsedPayload.Equipped.Count pieces ·
-                    @TotalMateriaCount() melds
-                </span>
-            }
-            else if (!string.IsNullOrWhiteSpace(ParseError))
-            {
-                <span class="pill error">parse failed</span>
-            }
-            else
-            {
-                <span class="pill ice">awaiting export</span>
-            }
-            <span style="flex:1"></span>
-            <button class="btn ghost" @onclick="ClearPlan">CLEAR</button>
-        </div>
-        @if (!string.IsNullOrWhiteSpace(ParseError))
-        {
-            <div style="margin-top:10px; padding:10px 12px; border:1px solid var(--blood); background:rgba(210,69,69,0.05); font-family:var(--f-mono); font-size:12px; color:var(--blood-bright);">
-                @ParseError
-            </div>
-        }
+<!-- ─── MASTHEAD ────────────────────────────────────────────────────────── -->
+<header class="masthead">
+  <img class="mh-bg" src="assets/masthead.png" alt="Tonberry Tactics" />
+</header>
+<div class="subbar">
+  <div class="wrap subbar-inner">
+    <span class="tagline">"No gear. No hope. No pants. Just onions."</span>
+    <div class="subbar-meta">
+      <span class="chip gold">v 1.4.0</span>
+      <span class="sub-plugin">paired with plugin v0.6.0+</span>
+      <span class="sub-div">TLF · Gear Division</span>
+      <span class="patch-pill">◆ Evercold · Patch 7.5</span>
+      <button class="btn ghost" onclick="window.setTheme(window.getTheme() === 'dark' ? 'light' : 'dark')" title="Toggle Theme" style="padding:4px 8px; border:1px solid var(--line); border-radius:4px; background:var(--sink); cursor:pointer;">
+        <img src="assets/tt-lantern-mark.svg" style="height:14px; opacity:0.8;" alt="Theme Toggle"/>
+      </button>
     </div>
-
-    @* ═══════════════════════════════════════════════════════════════ *@
-    @*  THREE-COLUMN LAYOUT                                             *@
-    @* ═══════════════════════════════════════════════════════════════ *@
-    <div class="cols">
-        <nav class="mobile-tabs">
-            <a href="#adventurer">Adventurer</a>
-            <a href="#gear">Gear & Stats</a>
-            <a href="#optimizer">Config</a>
-        </nav>
-
-        @* ─── LEFT — ADVENTURER CARD ──────────────────────────────── *@
-        <aside id="adventurer">
-            <div class="menu">
-                <div class="menu-head">
-                    <span class="glyph">◆</span>
-                    <span>Adventurer</span>
-                    <span class="spacer"></span>
-                    <span class="badge">bound</span>
-                </div>
-                <div class="menu-body">
-                    <div class="adv-portrait">
-                        <img src="assets/onion-helm.png" alt="Onion Knight portrait"
-                             style="width:100%; height:100%; object-fit:contain; display:block;"/>
-                        <div class="ring-anim"></div>
-                        <div class="state-tag @PipelineTagClass()">◆ @PipelineTagLabel() ◆</div>
-                    </div>
-
-                    <h3 class="adv-name">@AdvDisplayName()</h3>
-                    <div class="adv-title-line">Onion Knight of the TLF</div>
-
-                    <ul class="adv-stats">
-                        <li>
-                            <span class="k">Job</span>
-                            <span class="v">@AdvJob()</span>
-                            <span style="color:var(--ink-muted); font-size:11px; font-family:var(--f-mono);">@AdvJobName()</span>
-                        </li>
-                        <li><span class="k">Level</span> <span class="v">@AdvLevel()</span></li>
-                        <li><span class="k">Avg iLvl</span> <span class="v">@AdvIlvl()</span></li>
-                        <li>
-                            <span class="k">Melds</span>
-                            <span class="v">
-                                @if (Optimization != null)
-                                {
-                                    <span style="color:var(--ship-bright)">+@TotalMateriaCount() queued</span>
-                                }
-                                else
-                                {
-                                    <span style="color:var(--ink-muted)">—</span>
-                                }
-                            </span>
-                        </li>
-                        <li>
-                            <span class="k">Status</span>
-                            <span class="v"><span class="pill ship">@PipelineTagLabel()</span></span>
-                        </li>
-                    </ul>
-
-                    <div class="credo">
-                        ◆<br/>
-                        "Stab once. Stab true.<br/>
-                        The lantern guides, the knife decides."
-                        <span class="dash">— TLF CREDO —</span>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        @* ─── CENTER — GEAR / STATS / ADVISOR / AUDIT ─────────────── *@
-        <main id="gear">
-            <div class="stack-loose">
-
-                @* GEARSET *@
-                <div class="menu no-pad">
-                    <div class="menu-head">
-                        <span class="glyph">◆</span>
-                        <span>Gearset</span>
-                        <span class="spacer"></span>
-                        <span class="pill ice">@GearSetLabel()</span>
-                        <span class="badge">@GearSlotCount() / 13</span>
-                    </div>
-                    <div class="menu-body">
-                        @if (ParsedPayload?.Equipped is { Count: > 0 } pieces)
-                        {
-                            <div class="gear-grid" style="padding:0; padding-top:4px;">
-                                @foreach (var piece in pieces)
-                                {
-                                    <div class="gear-slot">
-                                        <div class="gear-icon">
-                                            <span class="glyph">@SlotGlyph(piece.Slot)</span>
-                                            @if (piece.ItemLevel > 0)
-                                            {
-                                                <span class="ilvl-tag">i@(piece.ItemLevel)</span>
-                                            }
-                                        </div>
-                                        <div class="gear-meta">
-                                            <div class="gear-slot-name">@piece.Slot.ToUpper()</div>
-                                            <div class="gear-item-name @(piece.IsHighQuality ? "hq" : "")">
-                                                @(string.IsNullOrEmpty(piece.Name) ? "—" : piece.Name)
-                                            </div>
-                                            <div class="materia-dots">
-                                                @foreach (var m in piece.Materia ?? new List<ExportMateriaV1>())
-                                                {
-                                                    <span class="mat-dot @MateriaStatClass(m.StatName)"
-                                                          title="@m.StatName +@m.StatValue (slot @m.SlotIndex)"></span>
-                                                }
-                                                @for (int i = (piece.Materia?.Count ?? 0); i < piece.MateriaSlotCount; i++)
-                                                {
-                                                    <span class="mat-dot empty rec" title="empty (recommended fill)"></span>
-                                                }
-                                            </div>
-                                            <div class="mobile-only" style="font-family: var(--f-mono); font-size: 10px; color: var(--frost-dim); margin-top: 4px; line-height: 1.4;">
-                                                @foreach (var m in piece.Materia ?? new List<ExportMateriaV1>())
-                                                {
-                                                    <div>@m.StatName +@m.StatValue</div>
-                                                }
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 16px; border-top:1px dashed var(--bd-pixel-lite); font-family:var(--f-mono); font-size:11px; color:var(--ink-muted);">
-                                <span>Hover a slot to inspect</span>
-                                <span>
-                                    <span class="pill ship" style="margin-right:6px">melded · @TotalMateriaCount()</span>
-                                    <span class="pill warn">empty · @(Optimization?.PlanRecommendations.Count ?? 0)</span>
-                                </span>
-                            </div>
-                        }
-                        else
-                        {
-                            <div style="padding:32px 24px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--ink-muted); font-size:14px;">
-                                The lantern waits. Paste your gear export above to fill this grid.
-                            </div>
-                        }
-                    </div>
-                </div>
-
-                @* STAT PROFILE *@
-                <div class="menu">
-                    <div class="menu-head">
-                        <span class="glyph">◇</span>
-                        <span>Stat Profile</span>
-                        <span class="spacer"></span>
-                        <span class="pill gold">@StatProfileBadge()</span>
-                    </div>
-                    <div class="menu-body">
-                        <div class="stat-grid" style="display:flex; flex-direction:column; gap:0;">
-                            @if (ParsedPayload?.Character.TotalStats != null && ParsedPayload.Character.TotalStats.Count > 0)
-                            {
-                                @foreach (var s in ParsedPayload.Character.TotalStats)
-                                {
-                                    <CapGauge Label="@s.DisplayName" Value="@s.Value" Cap="@s.Cap" />
-                                }
-                            }
-                            else
-                            {
-                                @* Fallback for V1 string: keep old representation or similar. But user says "bars go live when V2 lands." *@
-                                <div style="padding:16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--ink-muted); font-size:14px;">
-                                    Real caps require a v2 export from GearGoblin 0.6.0+.
-                                </div>
-                            }
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 4px 2px; font-family:var(--f-mono); font-size:11px; color:var(--ink-muted); flex-wrap:wrap; gap:10px;">
-                            <span>
-                                <span style="display:inline-block; width:8px; height:8px; background:var(--lantern); box-shadow:0 0 6px var(--lantern); margin-right:6px; vertical-align:middle;"></span>
-                                Materia totals from <code class="inline">/ttexport</code>
-                            </span>
-                            <span style="font-style:italic;">Derivation rows + breakpoint markers ship in v0.6.1 (Akhmorning formulas)</span>
-                        </div>
-                    </div>
-                </div>
-
-                @* MATERIA ADVISOR *@
-                <div class="menu-warm">
-                    <div class="menu-head">
-                        <span class="glyph">◆</span>
-                        <span>Materia Advisor</span>
-                        <span class="spacer"></span>
-                        @if (Optimization?.PlanRecommendations is { Count: > 0 } recs)
-                        {
-                            <span class="pill gold">@recs.Count melds queued</span>
-                        }
-                        <span class="badge">Job Priority (via Core)</span>
-                    </div>
-                    <div class="menu-body">
-                        @if (Optimization?.PlanRecommendations is { Count: > 0 } recsList)
-                        {
-                            <div class="advisor-list" style="margin:-14px -16px 0;">
-                                @{ int idx = 1; }
-                                @foreach (var rec in recsList)
-                                {
-                                    <div class="advisor-rec">
-                                        <span class="num">@CircledNum(idx)</span>
-                                        <span class="knife">◆</span>
-                                        <div class="desc">
-                                            <span class="target">@rec.Piece · slot @(rec.SlotIndex + 1)</span>
-                                            <span class="arrow"> → </span>
-                                            <span class="change">
-                                                <span class="out" style="font-style:italic;">(empty)</span>
-                                                <span style="color:var(--ink-hairline)">›</span>
-                                                <span class="in">@rec.Materia.Display()</span>
-                                            </span>
-                                            <span class="pill warn">empty slot</span>
-                                            <span class="why">
-                                                Empty guaranteed slot — fill with @rec.Materia.Stat priority (+@rec.Materia.Value @rec.Materia.Stat)
-                                            </span>
-                                        </div>
-                                        <div class="gain">
-                                            +@rec.Materia.Value
-                                            <span style="font-family:var(--f-pixel); font-size:7px; letter-spacing:1.5px; color:var(--ink-muted); margin-left:6px; vertical-align:middle;">@rec.Materia.Stat</span>
-                                        </div>
-                                    </div>
-                                    idx++;
-                                }
-                                <div class="advisor-meta">
-                                    <span>
-                                        <span class="mode-tag">Mode: Expected Damage & Priority (via Core)</span>
-                                        <span style="margin-left:10px; font-style:italic;">
-                                            applied via <code class="inline">MeldOptimizerAdapter</code> + <code class="inline">GearGoblin.Core</code>
-                                        </span>
-                                    </span>
-                                    <span style="color:var(--ship-bright)">
-                                        <span style="font-family:var(--f-pixel); font-size:7px; letter-spacing:2px; color:var(--ink-muted); margin-right:8px;">EMPTY</span>
-                                        @recsList.Count slots
-                                    </span>
-                                </div>
-                            </div>
-                        }
-                        else if (ParsedPayload != null)
-                        {
-                            <div style="padding:24px 16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--ink-body); font-size:14px;">
-                                All guaranteed slots filled. The knife is sharp.
-                            </div>
-                        }
-                        else
-                        {
-                            <div style="padding:24px 16px; text-align:center; font-family:var(--f-serif); font-style:italic; color:var(--ink-muted); font-size:14px;">
-                                Paste an export and STEP FORWARD to summon recommendations.
-                            </div>
-                        }
-                    </div>
-                </div>
-
-                @* MELD AUDIT *@
-                <div class="menu">
-                    <div class="menu-head">
-                        <span class="glyph">◇</span>
-                        <span>Meld Audit</span>
-                        <span class="spacer"></span>
-                        <span class="badge">v0.6.6.0 derive</span>
-                    </div>
-                    <div class="menu-body">
-                        <div class="audit" style="margin:-14px -16px 0;">
-                            <div class="audit-cell">
-                                <span class="pip @AuditPipClass(AuditEmptyCount())"></span>
-                                <span class="audit-label">Empty slots</span>
-                                <span class="audit-text">
-                                    @if (AuditEmptyCount() > 0)
-                                    {
-                                        <text>@AuditEmptyCount() guaranteed slot(s) unmelded — fill all via STEP FORWARD</text>
-                                    }
-                                    else if (ParsedPayload != null)
-                                    {
-                                        <text>All guaranteed slots filled</text>
-                                    }
-                                    else
-                                    {
-                                        <text>—</text>
-                                    }
-                                </span>
-                                <span class="audit-count @AuditPipClass(AuditEmptyCount())">@AuditEmptyCount()</span>
-                            </div>
-                            <div class="audit-cell">
-                                <span class="pip @AuditPipClass(AuditWrongStatCount())"></span>
-                                <span class="audit-label">Wrong stat</span>
-                                <span class="audit-text">
-                                    @if (AuditWrongStatCount() > 0)
-                                    {
-                                        <text>@AuditWrongStatCount() meld(s) on stats outside @JobAbbr() priority</text>
-                                    }
-                                    else if (ParsedPayload != null)
-                                    {
-                                        <text>All melds on priority stats</text>
-                                    }
-                                    else
-                                    {
-                                        <text>—</text>
-                                    }
-                                </span>
-                                <span class="audit-count @AuditPipClass(AuditWrongStatCount())">@AuditWrongStatCount()</span>
-                            </div>
-                            <div class="audit-cell">
-                                <span class="pip @AuditPipClass(AuditUnderTierCount())"></span>
-                                <span class="audit-label">Under-tier</span>
-                                <span class="audit-text">
-                                    @if (AuditUnderTierCount() > 0)
-                                    {
-                                        <text>@AuditUnderTierCount() meld(s) below Tier XII — upgrade for +stat</text>
-                                    }
-                                    else if (ParsedPayload != null)
-                                    {
-                                        <text>All melds at current cap tier</text>
-                                    }
-                                    else
-                                    {
-                                        <text>—</text>
-                                    }
-                                </span>
-                                <span class="audit-count @AuditPipClass(AuditUnderTierCount())">@AuditUnderTierCount()</span>
-                            </div>
-                            <div class="audit-cell">
-                                <span class="pip @AuditPipClass(AuditOvercapCount())"></span>
-                                <span class="audit-label">Overcap</span>
-                                <span class="audit-text">
-                                    @if (AuditOvercapCount() > 0)
-                                    {
-                                        <text>@AuditOvercapCount() piece(s) with 2+ same-stat Tier XII (likely overcapping)</text>
-                                    }
-                                    else if (ParsedPayload != null)
-                                    {
-                                        <text>No likely overcap pieces detected</text>
-                                    }
-                                    else
-                                    {
-                                        <text>—</text>
-                                    }
-                                </span>
-                                <span class="audit-count @AuditPipClass(AuditOvercapCount())">@AuditOvercapCount()</span>
-                            </div>
-                            <div class="audit-cell" style="border-top:1px solid var(--border); margin-top:4px; padding-top:10px;">
-                                <span class="pip @AuditPipClass(AuditReplaceCount())"></span>
-                                <span class="audit-label">Sell / replace</span>
-                                <span class="audit-text">
-                                    @if (AuditReplaceCount() > 0)
-                                    {
-                                        <text>@AuditReplaceCount() materia recommended to extract & replace —</text>
-                                        <button type="button" @onclick="ToggleSellBreakdown"
-                                                style="background:none; border:none; color:var(--ship-bright); cursor:pointer; padding:0 0 0 6px; font-family:inherit; font-size:inherit; text-decoration:underline;">
-                                            @(ShowSellBreakdown ? "hide" : "show") breakdown
-                                        </button>
-                                    }
-                                    else if (ParsedPayload != null)
-                                    {
-                                        <text>All melded materia recommended to keep</text>
-                                    }
-                                    else
-                                    {
-                                        <text>—</text>
-                                    }
-                                </span>
-                                <span class="audit-count @AuditPipClass(AuditReplaceCount())">@AuditReplaceCount()</span>
-                            </div>
-                            @if (ShowSellBreakdown && BuildSellBreakdown() is { Count: > 0 } breakdown)
-                            {
-                                <div style="grid-column: 1 / -1; padding:6px 4px 10px; font-family:var(--f-mono); font-size:11px; color:var(--ink-body); display:flex; flex-direction:column; gap:6px;">
-                                    @foreach (var v in breakdown)
-                                    {
-                                        <div style="display:flex; flex-wrap:wrap; gap:8px; padding:4px 8px; background:var(--bg-2); border-left:2px solid var(--lantern);">
-                                            <span style="color:var(--lantern-dim); min-width:140px;">@v.Piece · slot @(v.SlotIndex + 1)</span>
-                                            <span style="color:var(--ink-muted);">@v.CurrentMateriaName</span>
-                                            <span style="color:var(--warning); flex:1;">@v.Headline</span>
-                                            <span style="color:var(--ship-bright);">@v.Detail</span>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                        <div style="padding:12px 4px 2px; display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:11px; color:var(--ink-muted); flex-wrap:wrap; gap:8px;">
-                            <span>
-                                Severity:
-                                <span style="color:var(--ship-bright)">● OK</span> ·
-                                <span style="color:var(--lantern)">● Warn</span> ·
-                                <span style="color:var(--blood-bright)">● Error</span>
-                            </span>
-                            <span>Audit logic mirrors plugin's MeldAudit format (v0.6.6.0)</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </main>
-
-        @* ─── RIGHT — OPTIMIZER / EXPORT / PLUGIN / FEEDBACK / MANIFESTO ─ *@
-        <aside id="optimizer">
-            <div class="stack-loose">
-
-                @* OPTIMIZER CONTROLS *@
-                <div class="menu">
-                    <div class="menu-head">
-                        <span class="glyph">◇</span>
-                        <span>Optimizer</span>
-                        <span class="spacer"></span>
-                        <span class="badge">config</span>
-                    </div>
-                    <div class="menu-body">
-                        <div style="margin-bottom:16px;">
-                            <div class="h-eyebrow" style="margin-bottom:6px;">▸ Mode</div>
-                            <div class="seg-toggle">
-                                <button class="@(OptimizerMode == "Pure-Math" ? "on" : "")"
-                                        @onclick='() => OptimizerMode = "Pure-Math"'>Pure Math</button>
-                                <button class="@(OptimizerMode == "Balance" ? "on" : "")"
-                                        @onclick='() => OptimizerMode = "Balance"'>Balance</button>
-                            </div>
-                            <div style="margin-top:8px; font-family:var(--f-serif); font-style:italic; font-size:12px; color:var(--ink-muted); line-height:1.5;">
-                                @if (OptimizerMode == "Pure-Math")
-                                {
-                                    <text>Greedy per-stat priority — </text>
-                                    <span style="color:var(--lantern)">fast, naive, ships today.</span>
-                                }
-                                else
-                                {
-                                    <text>Weighted preset from </text>
-                                    <code class="inline">thebalanceffxiv.com</code>
-                                    <text> — </text>
-                                    <span style="color:var(--lantern)">queued for v0.6.1+</span>
-                                }
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-eyebrow" style="margin-bottom:6px;">▸ Job profile</div>
-                            <div class="job-picker">
-                                @foreach (var (abbr, role) in AllJobs)
-                                {
-                                    var jobAbbr = abbr;
-                                    <div class="job-tile role-@role @(ActiveJob() == jobAbbr ? "active" : "")"
-                                         @onclick="@(() => ActiveJobOverride = jobAbbr)">
-                                        @jobAbbr
-                                    </div>
-                                }
-                            </div>
-                            <div class="role-row">
-                                <span><span class="swatch" style="background:#4a6ec0"></span>TANK</span>
-                                <span><span class="swatch" style="background:#5cb070"></span>HEALER</span>
-                                <span><span class="swatch" style="background:#c44a4a"></span>DPS</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                @* EXPORT CARD *@
-                <div class="menu">
-                    <div class="menu-head">
-                        <span class="glyph">◆</span>
-                        <span>Export to Game</span>
-                        <span class="spacer"></span>
-                        <span class="badge">GG-PLAN:v1:</span>
-                    </div>
-                    <div class="menu-body">
-                        <div style="font-family:var(--f-serif); font-size:13px; color:var(--ink-body); font-style:italic; margin-bottom:10px; line-height:1.5;">
-                            Copy and paste into <code class="inline">/ttimport</code> back in-game.
-                        </div>
-                        <textarea class="export-textarea" readonly value="@GeneratedImportString"
-                                  placeholder="Plan string appears here after STEP FORWARD."></textarea>
-                        <div style="display:flex; gap:8px; margin-top:10px; align-items:center;">
-                            <button class="btn copy"
-                                    @onclick="CopyImportString"
-                                    disabled="@(string.IsNullOrEmpty(GeneratedImportString))">
-                                ◆ COPY PLAN
-                            </button>
-                            <span style="flex:1"></span>
-                            <span class="pill ice">round-trip ready</span>
-                        </div>
-                    </div>
-                </div>
-
-                @* TLF CHARITY *@
-                <div class="menu-warm plugin-callout" style="padding:16px 18px;">
-                    <span class="v-tag">◆ The TLF Home for Children Without Knives</span>
-                    <div style="position:relative; padding-top:56.25%; margin-top:10px; border-radius:6px; overflow:hidden;">
-                        <iframe src="https://www.youtube.com/embed/HNttJA6kKWo?start=8"
-                                style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;"
-                                title="TLF Home For Children Without Knives"
-                                loading="lazy"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                allowfullscreen></iframe>
-                    </div>
-                    <div class="body" style="margin-top:10px;">
-                        <strong>A public service announcement from the Tonberry Liberation Front.</strong>
-                        Somewhere in the dark, a Tonberry youngling sits with empty hands and a cold lantern, unable to chop, unable to whittle, unable to say "Stab" with any conviction at all. A Tonberry without a knife is not a threat. They are a victim.
-                        <br /><br />
-                        We provide safe underground housing, cultural education, and access to age-appropriate knives. For less than yew'd waste on a single sad teleport, yew can restore what was taken. Oi'm not askin' for meself. Oi'm askin' for <em>them.</em>
-                        <div style="margin-top:14px;">
-                            <a class="btn copy" href="https://newageninjacorps.com/collections/tonberry-liberation-front" target="_blank" rel="noopener noreferrer" style="text-decoration:none; display:inline-block;">Donate a Knife</a>
-                        </div>
-                        <div style="margin-top:10px; font-family:var(--f-mono); font-size:10px; color:var(--ink-body); font-style:italic;">
-                            Comment "Onion of us." It's not a cult. Probably. The mannequins are watching.
-                        </div>
-                    </div>
-                </div>
-
-                @* FEEDBACK PANEL (v0.5.4 — restyled inside the new menu chrome) *@
-                <div class="menu">
-                    <div class="menu-head">
-                        <span class="glyph">◇</span>
-                        <span>Feedback</span>
-                        <span class="spacer"></span>
-                        <span class="badge">v1.3.0</span>
-                    </div>
-                    <div class="menu-body">
-                        <div style="font-family:var(--f-serif); font-style:italic; font-size:13px; color:var(--ink-body); line-height:1.5; margin-bottom:12px;">
-                            Bug, disagreement, confusion, or just saying hi — drop a line and it'll find Refia.
-                        </div>
-
-                        <div class="h-eyebrow" style="margin-bottom:6px;">▸ Category</div>
-                        <div class="seg-toggle" style="margin-bottom:10px; flex-wrap:wrap;">
-                            @for (int i = 0; i < FeedbackCategories.Length; i++)
-                            {
-                                var ix = i;
-                                <button class="@(FeedbackCategory == ix ? "on" : "")"
-                                        @onclick="@(() => FeedbackCategory = ix)"
-                                        style="font-size:7px;">@FeedbackCategories[ix]</button>
-                            }
-                        </div>
-
-                        <div class="h-eyebrow" style="margin-bottom:6px;">▸ Message</div>
-                        <textarea class="export-textarea feedback-textarea"
-                                  @bind="FeedbackText"
-                                  @bind:event="oninput"
-                                  placeholder="What happened? What did you expect? What would the lantern do?"></textarea>
-
-                        <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-family:var(--f-mono); font-size:11px; color:var(--ink-body);">
-                            <input type="checkbox" @bind="FeedbackIncludeDiag"/>
-                            Include diagnostic info (version, browser, parser state)
-                        </label>
-
-                        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-                            <button class="btn copy"
-                                    @onclick="OpenGitHubIssue"
-                                    disabled="@(!HasFeedbackText)">
-                                ◆ OPEN GITHUB ISSUE
-                            </button>
-                            <button class="btn ghost"
-                                    @onclick="CopyFeedbackPayload"
-                                    disabled="@(!HasFeedbackText)">
-                                COPY FOR DISCORD
-                            </button>
-                        </div>
-                        @if (!string.IsNullOrEmpty(FeedbackLastAction))
-                        {
-                            <div style="margin-top:10px; font-family:var(--f-mono); font-size:11px; color:var(--ship-bright);">
-                                @FeedbackLastAction
-                            </div>
-                        }
-                    </div>
-                </div>
-
-                @* TLF MANIFESTO *@
-                <div class="menu" style="padding:14px 16px; border-color:var(--bd-warm);">
-                    <div class="h-eyebrow" style="color:var(--tonberry-bright); margin-bottom:8px;">
-                        ◇ TLF Manifesto
-                    </div>
-                    <div style="font-family:var(--f-serif); font-size:13px; color:var(--ink-body); line-height:1.65; font-style:italic;">
-                        We carry the lantern. We carry the knife. We do not run.
-                        We step forward, one slot at a time, until the math is done.
-                    </div>
-                    <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap; font-family:var(--f-pixel); font-size:7px; letter-spacing:1.5px; color:var(--ink-muted);">
-                        <span class="pill ice">offline · WASM</span>
-                        <span class="pill ice">no backend</span>
-                        <span class="pill gold">round-trip · v1</span>
-                    </div>
-                </div>
-
-            </div>
-        </aside>
-
-    </div>
-
-    @* ═══════════════════════════════════════════════════════════════ *@
-    @*  TONBERRY TRAIL — CSS-only walking sprite footer animation       *@
-    @* ═══════════════════════════════════════════════════════════════ *@
-    <div class="tonberry-trail">
-        <div class="ground"></div>
-        <div class="doink">◆ STEP ◆</div>
-        <div class="doink">◆ STAB ◆</div>
-        <div class="doink">◆ ONWARD ◆</div>
-        <div class="tonberry">
-            <img src="assets/rags-pixel.png" alt="Onion Knight walking"/>
-        </div>
-    </div>
-
-    @* ═══════════════════════════════════════════════════════════════ *@
-    @*  FOOTER                                                          *@
-    @* ═══════════════════════════════════════════════════════════════ *@
-    <div class="foot">
-        <span class="glyph">◆</span>
-        The Onion Knight stands ready
-        <span class="glyph">◆</span>
-        <span class="v">TONBERRY TACTICS · v1.3.0 · CLOUDFLARE PAGES · NO GEAR · NO HOPE · JUST ONIONS</span>
-    </div>
-
+  </div>
 </div>
+
+<!-- ─── HERO — live close-the-gap demo ──────────────────────────────────── -->
+<section class="hero-demo">
+  <div class="wrap hero-inner">
+    <div class="hero-copy">
+      <span class="eyebrow">The close-the-gap moment</span>
+      <h1 class="hero-head">Know exactly how far<br />you are from <span class="accent">cap</span>.</h1>
+      <p class="hero-sub">Every substat has a ceiling. Tonberry Tactics reads your real totals straight from the game and shows the melds that close the distance — watch it work before you read a word.</p>
+      <div class="hero-cta">
+        <a class="btn primary" href="#exportTop">▶ Paste your gear</a>
+        <button class="btn ghost cobalt" id="heroReplay" onclick="playHero()">↺ Replay</button>
+      </div>
+    </div>
+    <div class="hero-stage">
+      <div class="hero-gauges" id="heroGauges"></div>
+      <div class="hero-legend">
+        <span><i class="dot gold"></i> Current</span>
+        <span><i class="dot cobalt"></i> Near cap</span>
+        <span><i class="dot ghost"></i> After optimization</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <!-- ─── EXPORT BAR ────────────────────────────────────────────────────── -->
+  <section class="panel export-bar" id="exportTop">
+    <div class="panel-hd"><span class="title">Adventurer</span><span class="chip">/ttexport → audit</span></div>
+    <div class="panel-bd">
+      <p class="export-lead"><span class="italic">Step forward.</span> Paste the <span class="tok">GG-EXPORT:v1:</span> string from <span class="cmd">/ttexport</span> to begin the audit.</p>
+      <div class="export-row">
+        <textarea id="exportInput" placeholder="GG-EXPORT:v1:eyJwbHVnaW4iOiJUb25iZXJyeVRhY3RpY3MiLi4u" @bind="ExportString" @bind:event="oninput"></textarea>
+        <button class="step-forward" id="stepBtn" @onclick="RunOptimization">
+          ▶ Step Forward
+          <small>— star once, star true —</small>
+        </button>
+      </div>
+      <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-family:var(--f-data); font-size:11px; color:var(--fg-muted);">
+          @if (ParsedPayload != null)
+          {
+              <span class="chip gold">
+                  parsed · @ParsedPayload.Character.JobAbbreviation ·
+                  iLvl @ParsedPayload.Character.AverageItemLevel ·
+                  @ParsedPayload.Equipped.Count pieces ·
+                  @TotalMateriaCount() melds
+              </span>
+          }
+          else if (!string.IsNullOrWhiteSpace(ParseError))
+          {
+              <span class="chip" style="color:var(--err); border-color:var(--err);">parse failed</span>
+          }
+          else
+          {
+              <span class="chip">awaiting export</span>
+          }
+      </div>
+      @if (!string.IsNullOrWhiteSpace(ParseError))
+      {
+          <div style="margin-top:10px; padding:10px 12px; border:1px solid var(--err); background:rgba(192,85,107,0.05); font-family:var(--f-data); font-size:12px; color:var(--err);">
+              @ParseError
+          </div>
+      }
+      <div class="export-actions">
+        <button class="btn ghost cobalt" id="sampleBtn" onclick="loadSample()">Load sample export</button>
+        <button class="btn ghost" id="clearBtn" @onclick="ClearPlan">Clear</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── MAIN LAYOUT ───────────────────────────────────────────────────── -->
+  <div class="layout">
+
+    <!-- LEFT: ADVENTURER -->
+    <aside class="col-left">
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Adventurer</span><span class="chip" id="advTag">@(ParsedPayload != null ? "linked" : "unlinked")</span></div>
+        <div class="panel-bd">
+          <img class="adv-portrait" src="assets/adventurer.png" alt="Adventurer portrait" />
+          <div class="adv-name" id="advName">@AdvDisplayName()</div>
+          <div class="adv-role">Onion Knight of the TLF</div>
+          <div class="adv-stats">
+            <div class="row"><span class="k">Job</span><span class="v @(ParsedPayload==null?"dim":"")" id="advJob">@AdvJob()</span></div>
+            <div class="row"><span class="k">Level</span><span class="v @(ParsedPayload==null?"dim":"")" id="advLevel">@AdvLevel()</span></div>
+            <div class="row"><span class="k">Avg iLvl</span><span class="v @(ParsedPayload==null?"dim":"")" id="advIlvl">@AdvIlvl()</span></div>
+            <div class="row"><span class="k">Melds</span><span class="v @(ParsedPayload==null?"dim":"")" id="advMelds">
+                @if (Optimization != null)
+                {
+                    <span style="color:var(--ok)">+@TotalMateriaCount() queued</span>
+                }
+                else
+                {
+                    <text>—</text>
+                }
+            </span></div>
+            <div class="row"><span class="k">Status</span><span class="adv-status" id="advStatus" style="@(ParsedPayload!=null ? "color:var(--ok); border-color:rgba(58,157,110,0.4);" : "")">
+                @(ParsedPayload!=null ? "audited" : "awaiting gear")
+            </span></div>
+          </div>
+          <div class="adv-credo">
+            "Star once, star true. The lantern guides, the knife decides."
+            <span class="sig">— TLF Credo —</span>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- MIDDLE: GEARSET / STAT PROFILE / ADVISOR / AUDIT -->
+    <section class="col-mid">
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Gearset</span><span class="chip" id="gearCount">@GearSlotCount() / 13</span></div>
+        <div class="panel-bd">
+          @if (ParsedPayload?.Equipped is { Count: > 0 } pieces)
+          {
+              <div id="gearGrid" class="gear-grid">
+                  @foreach (var piece in pieces)
+                  {
+                      <div class="gear-slot">
+                          <div class="ico" style="display:flex;align-items:center;justify-content:center;font-size:14px;">@SlotGlyph(piece.Slot)</div>
+                          <span>
+                              <span class="g-name">@(string.IsNullOrEmpty(piece.Name) ? piece.Slot.ToUpper() : piece.Name)</span><br>
+                              <span class="g-meta">i@(piece.ItemLevel) · @(piece.Materia?.Count ?? 0) melds</span>
+                          </span>
+                      </div>
+                  }
+              </div>
+          }
+          else
+          {
+              <div id="gearEmpty" class="empty-state">The lantern waits. Paste your gear export above to fill this grid.</div>
+          }
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Stat Profile</span><span class="chip cobalt">substats vs cap</span></div>
+        <div class="panel-bd">
+          <div id="statGrid" class="stat-grid">
+              @if (ParsedPayload?.Character.TotalStats != null && ParsedPayload.Character.TotalStats.Count > 0)
+              {
+                  @foreach (var s in ParsedPayload.Character.TotalStats)
+                  {
+                      <CapGauge Label="@s.DisplayName" Value="@s.Value" Cap="@s.Cap" />
+                  }
+              }
+              else
+              {
+                  <div class="empty-state">Real caps require a v2 export from GearGoblin 0.6.0+.</div>
+              }
+          </div>
+          <div class="stat-note"><span class="dot">●</span> <span>Materia totals from <strong>/ttexport</strong>. Derivation rows + breakpoint markers ship in v0.6.1 (Akhmorning formulas).</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Materia Advisor</span><span class="chip" id="advisorChip">job priority order</span></div>
+        <div class="panel-bd">
+          @if (Optimization?.PlanRecommendations is { Count: > 0 } recsList)
+          {
+              <div id="advisorList" style="display:flex;flex-direction:column;gap:8px;">
+                  @{ int idx = 1; }
+                  @foreach (var rec in recsList)
+                  {
+                      <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line-soft);border-radius:7px;background:var(--sink);">
+                          <span style="font-family:var(--f-pixel);font-size:9px;color:var(--gold-bright);">@RomanGrade(idx)</span>
+                          <span style="font-family:var(--f-data);font-size:13px;color:var(--fg);flex:1;">
+                              @rec.Piece #@(rec.SlotIndex + 1) ← @rec.Materia.Display()
+                              <span style="color:var(--ok);">(@rec.Materia.Value)</span>
+                          </span>
+                          <span class="chip cobalt">empty slot</span>
+                      </div>
+                      idx++;
+                  }
+              </div>
+          }
+          else if (ParsedPayload != null)
+          {
+              <div class="empty-state">All guaranteed slots filled. The knife is sharp.</div>
+          }
+          else
+          {
+              <div id="advisorEmpty" class="empty-state">Paste an export and step forward to summon recommendations.</div>
+          }
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Meld Audit</span><span class="chip">MeldAudit · v0.6.6.0</span></div>
+        <div class="panel-bd">
+          <div class="audit-grid">
+            <div class="audit-row @AuditPipClass(AuditEmptyCount())"><span class="sev"></span><span class="a-name">Empty slots</span><span class="a-val">@(ParsedPayload != null ? AuditEmptyCount() : "—")</span></div>
+            <div class="audit-row @AuditPipClass(AuditWrongStatCount())"><span class="sev"></span><span class="a-name">Wrong stat</span><span class="a-val">@(ParsedPayload != null ? AuditWrongStatCount() : "—")</span></div>
+            <div class="audit-row @AuditPipClass(AuditUnderTierCount())"><span class="sev"></span><span class="a-name">Under-tier</span><span class="a-val">@(ParsedPayload != null ? AuditUnderTierCount() : "—")</span></div>
+            <div class="audit-row @AuditPipClass(AuditOvercapCount())"><span class="sev"></span><span class="a-name">Overcap</span><span class="a-val">@(ParsedPayload != null ? AuditOvercapCount() : "—")</span></div>
+            <div class="audit-row @AuditPipClass(AuditReplaceCount())"><span class="sev"></span><span class="a-name">Sell / replace</span><span class="a-val">
+                @(ParsedPayload != null ? AuditReplaceCount() : "—")
+                @if (AuditReplaceCount() > 0)
+                {
+                    <button type="button" @onclick="ToggleSellBreakdown" style="background:none; border:none; color:var(--cobalt-bright); cursor:pointer; padding:0 0 0 6px; font-family:inherit; font-size:inherit; text-decoration:underline;">
+                        @(ShowSellBreakdown ? "hide" : "show")
+                    </button>
+                }
+            </span></div>
+          </div>
+          @if (ShowSellBreakdown && BuildSellBreakdown() is { Count: > 0 } breakdown)
+          {
+              <div style="margin-top:10px; font-family:var(--f-data); font-size:11px; color:var(--fg); display:flex; flex-direction:column; gap:6px;">
+                  @foreach (var v in breakdown)
+                  {
+                      <div style="display:flex; flex-wrap:wrap; gap:8px; padding:6px 10px; background:var(--sink); border-left:2px solid var(--warn); border-radius:4px;">
+                          <span style="color:var(--fg-2); min-width:140px;">@v.Piece · slot @(v.SlotIndex + 1)</span>
+                          <span style="color:var(--fg-muted);">@v.CurrentMateriaName</span>
+                          <span style="color:var(--warn); flex:1;">@v.Headline</span>
+                          <span style="color:var(--ok);">@v.Detail</span>
+                      </div>
+                  }
+              </div>
+          }
+          <div class="audit-legend">
+            <span>Severity:</span>
+            <span class="sw"><i style="background:var(--ok)"></i> OK</span>
+            <span class="sw"><i style="background:var(--warn)"></i> Warn</span>
+            <span class="sw"><i style="background:var(--over)"></i> Error</span>
+            <span style="margin-left:auto; font-style:italic;">Mirrors plugin's MeldAudit format</span>
+          </div>
+        </div>
+      </section>
+
+    </section>
+
+    <!-- RIGHT: OPTIMIZER / EXPORT / PSA / FEEDBACK / MANIFESTO -->
+    <aside class="col-right">
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Optimizer</span><span class="chip">config</span></div>
+        <div class="panel-bd">
+          <div class="job-label">Mode</div>
+          <div class="mode-toggle" id="modeToggle">
+            <button class="@(OptimizerMode == "Pure-Math" ? "active" : "")" @onclick='() => OptimizerMode = "Pure-Math"'>Pure Math</button>
+            <button class="@(OptimizerMode == "Balance" ? "active" : "")" @onclick='() => OptimizerMode = "Balance"'>Balance</button>
+          </div>
+          <p class="mode-desc" id="modeDesc">
+              @if (OptimizerMode == "Pure-Math")
+              {
+                  <text><b>Greedy per-stat priority</b> — fast, naive, ships today.</text>
+              }
+              else
+              {
+                  <text><b>Balance consensus weights</b> — queued for v0.6.1+.</text>
+              }
+          </p>
+          <div class="job-label">Job profile</div>
+          <div class="job-grid" id="jobGrid">
+              @foreach (var group in AllJobs.GroupBy(j => j.Role))
+              {
+                  <div class="job-row">
+                      @foreach (var (abbr, role) in group)
+                      {
+                          <div class="job @role @(ActiveJob() == abbr ? "active" : "")" @onclick="@(() => ActiveJobOverride = abbr)">@abbr</div>
+                      }
+                  </div>
+              }
+          </div>
+          <div class="job-legend">
+            <span><i style="background:var(--cobalt)"></i> Tank</span>
+            <span><i style="background:var(--ok)"></i> Healer</span>
+            <span><i style="background:var(--gold)"></i> DPS</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Export to Game</span><span class="chip gold">GG-PLAN:v1:</span></div>
+        <div class="panel-bd">
+          <p class="mode-desc">Copy and paste into <b>/ttimport</b> back in-game.</p>
+          <textarea id="planOutput" placeholder="Plan string appears after STEP FORWARD." readonly style="min-height:74px;" value="@GeneratedImportString"></textarea>
+          <div class="fb-actions" style="margin-top:10px; flex-direction:row; gap:8px;">
+            <button class="btn full" id="copyPlan" @onclick="CopyImportString" disabled="@(string.IsNullOrEmpty(GeneratedImportString))">◆ Copy plan</button>
+            <button class="btn full ghost" id="roundTrip">↺ Round-trip ready</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel psa">
+        <div class="panel-hd"><span class="title">TLF Home for Children Without Knives</span></div>
+        <div class="panel-bd">
+          <div class="video-thumb">
+            <span class="v-cap">TLF Home For Children</span>
+            <span class="v-sub">Refia Rakkiri · Last Onion Knight</span>
+            <span class="play"></span>
+          </div>
+          <div class="psa-text">
+            <p>A public service announcement from the Tonberry Liberation Front. Somewhere in the dark, a Tonberry youngling sits with empty hands and a cold lantern — unable to chop, unable to whittle, unable to say "Stab" with any conviction at all.</p>
+            <p>We provide safe underground housing, cultural education, and access to age-appropriate knives. For less than ye'd waste on a single sad teleport, you can restore what was taken.</p>
+            <p>Oi'm not askin' for meself. Oi'm askin' for <em>them</em>.</p>
+            <div class="donate">
+                <a class="btn" href="https://newageninjacorps.com/collections/tonberry-liberation-front" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">🔪 Donate a knife</a>
+            </div>
+            <p class="small">Comment "Onion of us." It's not a cult. Probably. The sœnnagins are watching.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Feedback</span><span class="chip">v1.4.0</span></div>
+        <div class="panel-bd">
+          <p class="mode-desc">Bug, disagreement, confusion, or just saying hi — drop a line and I'll find Refia.</p>
+          <div class="job-label">Category</div>
+          <div class="fb-cat" id="fbCat">
+              @for (int i = 0; i < FeedbackCategories.Length; i++)
+              {
+                  var ix = i;
+                  <button class="@(FeedbackCategory == ix ? "active" : "")" @onclick="@(() => FeedbackCategory = ix)">@FeedbackCategories[ix]</button>
+              }
+          </div>
+          <div class="job-label">Message</div>
+          <textarea placeholder="What happened? What did you expect? What's auld the lantern on?" style="min-height:80px;" @bind="FeedbackText" @bind:event="oninput"></textarea>
+          <label class="fb-check"><input type="checkbox" @bind="FeedbackIncludeDiag" /> Include diagnostic info (version, browser, parser state)</label>
+          <div class="fb-actions" style="margin-top:10px;">
+            <button class="btn full cobalt" @onclick="OpenGitHubIssue" disabled="@(!HasFeedbackText)">⎘ Open GitHub issue</button>
+            <button class="btn full ghost" @onclick="CopyFeedbackPayload" disabled="@(!HasFeedbackText)">Copy for Discord</button>
+          </div>
+          @if (!string.IsNullOrEmpty(FeedbackLastAction))
+          {
+              <div style="margin-top:10px; font-family:var(--f-data); font-size:11px; color:var(--ok);">
+                  @FeedbackLastAction
+              </div>
+          }
+        </div>
+      </section>
+
+      <section class="panel manifesto">
+        <div class="panel-hd"><span class="title">TLF Manifesto</span></div>
+        <div class="panel-bd">
+          <span class="line">We carry the lantern. We carry the knife.</span><br />
+          We do not run. We step forward — star once, star true — and we close the gap, one meld at a time.
+          <div class="m-chips">
+            <span class="m-chip">Offline · fast</span>
+            <span class="m-chip">No backend</span>
+            <span class="m-chip cobalt">Round-trip · v1</span>
+          </div>
+        </div>
+      </section>
+
+    </aside>
+  </div>
+</div>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-walk">
+      <div class="ground"></div>
+      <div class="walker"><img src="assets/onion-walker.png" alt="The Onion Knight, walking" /></div>
+    </div>
+    <div class="foot-credo">◆ &nbsp; The Onion Knight stands ready &nbsp; ◆</div>
+    <div class="foot-meta">Tonberry Tactics · v1.4.0 · Cloudflare Pages · No gear · No hope · Just onions</div>
+  </div>
+</footer>
+
+<script>
+  // ── HERO: live close-the-gap demo ─────────────────────────────────────────
+  var HERO = [
+    { label:'Critical Hit', value:2410, cap:2780, proj:2680 },
+    { label:'Direct Hit',   value:1180, cap:2780, proj:1456 }
+  ];
+  function fmt(n){ return n.toLocaleString('en-US'); }
+  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function buildHero(){
+    var host=document.getElementById('heroGauges'); if(!host) return; host.innerHTML='';
+    HERO.forEach(function(s){
+      var fillPct=Math.round(s.value/s.cap*100), pPct=Math.round(s.proj/s.cap*100);
+      var near=fillPct>=90;
+      var gap=s.cap-s.value, closes=s.proj-s.value;
+      var g=document.createElement('div'); g.className='hero-gauge';
+      g.innerHTML='<div class="hg-head"><span class="hg-label">'+s.label+'</span>'+
+        '<span class="hg-val"><span class="cur">'+fmt(s.value)+'</span> <span class="cap">/ '+fmt(s.cap)+' cap</span> <span class="proj">▸ '+fmt(s.proj)+'</span></span></div>'+
+        '<div class="hero-track"><div class="hg-proj" data-fill="'+pPct+'"></div>'+
+          '<div class="hg-fill'+(near?' is-near':'')+'" data-fill="'+fillPct+'"></div>'+
+          '<div class="hero-tick"></div></div>'+
+        '<div class="hg-gap">'+fmt(gap)+' to cap · <span class="closes">plan closes '+fmt(closes)+'</span></div>';
+      host.appendChild(g);
+    });
+  }
+  function playHero(){
+    var host=document.getElementById('heroGauges'); if(!host) return;
+    var fills=host.querySelectorAll('.hg-fill'), projs=host.querySelectorAll('.hg-proj');
+    var head=document.querySelector('.hero-head');
+    if(RM){
+      fills.forEach(function(f){ f.style.width=f.dataset.fill+'%'; });
+      projs.forEach(function(p){ p.style.width=p.dataset.fill+'%'; });
+      if(head) head.classList.add('in'); host.classList.add('show-proj'); return;
+    }
+    fills.forEach(function(f){ f.style.width='0%'; });
+    projs.forEach(function(p){ p.style.width='0%'; });
+    if(head) head.classList.remove('in'); host.classList.remove('show-proj');
+    requestAnimationFrame(function(){
+      setTimeout(function(){ fills.forEach(function(f){ f.style.width=f.dataset.fill+'%'; }); }, 160);
+      setTimeout(function(){ if(head) head.classList.add('in'); }, 720);
+      setTimeout(function(){ projs.forEach(function(p){ p.style.width=p.dataset.fill+'%'; }); host.classList.add('show-proj'); }, 1750);
+    });
+  }
+  function loadSample() {
+      // Basic stub for the sample loader JS trigger; in Blazor this would update state,
+      // but for now we just populate the textarea and click the step button
+      document.getElementById('exportInput').value = 'GG-EXPORT:v2:eyJWIjoyLCJqb2IiOiJHTkIiLCJsdmwiOjEwMCwiaWx2bCI6NzM1LCJ0b3RhbHMiOlt7IlN0YXQiOiJDcml0aWNhbCBIaXQiLCJWYWx1ZSI6MjY0MCwiQ2FwIjoyNzgwfSx7IlN0YXQiOiJEaXJlY3QgSGl0IiwiVmFsdWUiOjEzMzAsIkNhcCI6Mjc4MH0seyJTdGF0IjoiRGV0ZXJtaW5hdGlvbiIsIlZhbHVlIjoxOTEwLCJDYXAiOm51bGx9LHsiU3RhdCI6IlRlbmFjaXR5IiwiVmFsdWUiOjEyMDUsIkNhcCI6Mjc4MH0seyJTdGF0IjoiU2tpbGwgU3BlZWQiLCJWYWx1ZSI6MjkwMCwiQ2FwIjoyNzgwfSx7IlN0YXQiOiJQaWV0eSIsIlZhbHVlIjo0NDAsIkNhcCI6bnVsbH1dLCJlcXVpcHBlZCI6W3siU2xvdCI6Ik1haW5IYW5kIiwiSWQiOjQxMDgzLCJJdGVtTGV2ZWwiOjczNSwiTmFtZSI6IkF1Z3N0ZWR0ciIsIk1hdGVyaWEiOlt7IlNsb3RJbmRleCI6MCwiR3JhZGUiOjExLCJTdGF0TmFtZSI6IkNyaXRpY2FsIEhpdCIsIlN0YXRWYWx1ZSI6NTR9LHsiU2xvdEluZGV4IjoxLCJHcmFkZSI6MTEsIlN0YXROYW1lIjoiQ3JpdGljYWwgSGl0IiwiU3RhdFZhbHVlIjo1NH1dfV19';
+      var evt = new Event('input', { bubbles: true });
+      document.getElementById('exportInput').dispatchEvent(evt);
+      setTimeout(function() { document.getElementById('stepBtn').click(); }, 50);
+  }
+  
+  // init hero
+  setTimeout(function() {
+      buildHero(); playHero();
+  }, 100);
+</script>
 
 
 @code {
     // ═════════════════════════════════════════════════════════════════
     //  CONSTANTS — version-locked with the plugin (v0.5.5 alignment)
     // ═════════════════════════════════════════════════════════════════
-    private const string EmitterVersion = "1.1.4";
-    private const string TtVersion      = "1.1.4";
+    private const string EmitterVersion = "1.4.0";
+    private const string TtVersion      = "1.4.0";
 
     // ═════════════════════════════════════════════════════════════════
     //  INPUT / OUTPUT + PIPELINE STATE
@@ -1246,8 +970,18 @@
         }
         return sb.ToString();
     }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("ttHero.init");
+            }
+            catch { /* ignore if missing */ }
+        }
+    }
 }
-
 
 
 

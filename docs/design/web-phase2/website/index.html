@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tonberry Tactics — Gear &amp; Materia Optimizer</title>
+<meta name="description" content="Tonberry Tactics — paste your FFXIV gear export, see your real substat caps, and plan the melds." />
+
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+<link rel="icon" type="image/svg+xml" href="assets/tt-icon.svg" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ─── MASTHEAD ────────────────────────────────────────────────────────── -->
+<header class="masthead">
+  <img class="mh-bg" src="assets/masthead.png" alt="Tonberry Tactics" />
+</header>
+<div class="subbar">
+  <div class="wrap subbar-inner">
+    <span class="tagline">"No gear. No hope. No pants. Just onions."</span>
+    <div class="subbar-meta">
+      <span class="chip gold">v1.1.4</span>
+      <span class="sub-plugin">paired with plugin v0.0.0+</span>
+      <span class="sub-div">TLF · Gear Division</span>
+      <span class="patch-pill">◆ Evercold · Patch 7.0</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── HERO — live close-the-gap demo ──────────────────────────────────── -->
+<section class="hero-demo">
+  <div class="wrap hero-inner">
+    <div class="hero-copy">
+      <span class="eyebrow">The close-the-gap moment</span>
+      <h1 class="hero-head">Know exactly how far<br />you are from <span class="accent">cap</span>.</h1>
+      <p class="hero-sub">Every substat has a ceiling. Tonberry Tactics reads your real totals straight from the game and shows the melds that close the distance — watch it work before you read a word.</p>
+      <div class="hero-cta">
+        <a class="btn primary" href="#exportTop">▶ Paste your gear</a>
+        <button class="btn ghost cobalt" id="heroReplay">↺ Replay</button>
+      </div>
+    </div>
+    <div class="hero-stage">
+      <div class="hero-gauges" id="heroGauges"></div>
+      <div class="hero-legend">
+        <span><i class="dot gold"></i> Current</span>
+        <span><i class="dot cobalt"></i> Near cap</span>
+        <span><i class="dot ghost"></i> After optimization</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <!-- ─── EXPORT BAR ────────────────────────────────────────────────────── -->
+  <section class="panel export-bar" id="exportTop">
+    <div class="panel-hd"><span class="title">Adventurer</span><span class="chip">/ttexport → audit</span></div>
+    <div class="panel-bd">
+      <p class="export-lead"><span class="italic">Step forward.</span> Paste the <span class="tok">GG-EXPORT:v1:</span> string from <span class="cmd">/ttexport</span> to begin the audit.</p>
+      <div class="export-row">
+        <textarea id="exportInput" placeholder="GG-EXPORT:v3:eyJWIjoyLCJqb2IiOiJHTkIiLCJsdmwiOjEwMH0…"></textarea>
+        <button class="step-forward" id="stepBtn">
+          ▶ Step Forward
+          <small>— star once, star true —</small>
+        </button>
+      </div>
+      <div class="export-actions">
+        <button class="btn ghost cobalt" id="sampleBtn">Load sample export</button>
+        <button class="btn ghost" id="clearBtn">Clear</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── MAIN LAYOUT ───────────────────────────────────────────────────── -->
+  <div class="layout">
+
+    <!-- LEFT: ADVENTURER -->
+    <aside class="col-left">
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Adventurer</span><span class="chip" id="advTag">unlinked</span></div>
+        <div class="panel-bd">
+          <img class="adv-portrait" src="assets/adventurer.png" alt="Adventurer portrait" />
+          <div class="adv-name" id="advName">Adventurer</div>
+          <div class="adv-role">Onion Knight of the TLF</div>
+          <div class="adv-stats">
+            <div class="row"><span class="k">Job</span><span class="v dim" id="advJob">—</span></div>
+            <div class="row"><span class="k">Level</span><span class="v dim" id="advLevel">—</span></div>
+            <div class="row"><span class="k">Avg iLvl</span><span class="v dim" id="advIlvl">—</span></div>
+            <div class="row"><span class="k">Melds</span><span class="v dim" id="advMelds">—</span></div>
+            <div class="row"><span class="k">Status</span><span class="adv-status" id="advStatus">awaiting gear</span></div>
+          </div>
+          <div class="adv-credo">
+            "Star once, star true. The lantern guides, the knife decides."
+            <span class="sig">— TLF Credo —</span>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- MIDDLE: GEARSET / STAT PROFILE / ADVISOR / AUDIT -->
+    <section class="col-mid">
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Gearset</span><span class="chip" id="gearCount">0 / 13</span></div>
+        <div class="panel-bd">
+          <div id="gearEmpty" class="empty-state">The lantern waits. Paste your gear export above to fill this grid.</div>
+          <div id="gearGrid" class="gear-grid" hidden></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Stat Profile</span><span class="chip cobalt">substats vs cap</span></div>
+        <div class="panel-bd">
+          <div id="statGrid" class="stat-grid"></div>
+          <div class="stat-note"><span class="dot">●</span> <span>Materia totals from <strong>/ttexport</strong>. Derivation rows + breakpoint markers ship in v0.0.1 (Akhmorning formulas).</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Materia Advisor</span><span class="chip" id="advisorChip">job priority order</span></div>
+        <div class="panel-bd">
+          <div id="advisorEmpty" class="empty-state">Paste an export and step forward to summon recommendations.</div>
+          <div id="advisorList" hidden></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Meld Audit</span><span class="chip">MeldAudit · v0.0.0</span></div>
+        <div class="panel-bd">
+          <div class="audit-grid">
+            <div class="audit-row" id="auEmpty"><span class="sev"></span><span class="a-name">Empty slots</span><span class="a-val">—</span></div>
+            <div class="audit-row" id="auWrong"><span class="sev"></span><span class="a-name">Wrong stat</span><span class="a-val">—</span></div>
+            <div class="audit-row" id="auTier"><span class="sev"></span><span class="a-name">Under-tier</span><span class="a-val">—</span></div>
+            <div class="audit-row" id="auOver"><span class="sev"></span><span class="a-name">Overcap</span><span class="a-val">—</span></div>
+            <div class="audit-row" id="auSell"><span class="sev"></span><span class="a-name">Sell / replace</span><span class="a-val">—</span></div>
+          </div>
+          <div class="audit-legend">
+            <span>Severity:</span>
+            <span class="sw"><i style="background:var(--ok)"></i> OK</span>
+            <span class="sw"><i style="background:var(--warn)"></i> Warn</span>
+            <span class="sw"><i style="background:var(--over)"></i> Error</span>
+            <span style="margin-left:auto; font-style:italic;">Mirrors plugin's MeldAudit format</span>
+          </div>
+        </div>
+      </section>
+
+    </section>
+
+    <!-- RIGHT: OPTIMIZER / EXPORT / PSA / FEEDBACK / MANIFESTO -->
+    <aside class="col-right">
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Optimizer</span><span class="chip">config</span></div>
+        <div class="panel-bd">
+          <div class="job-label">Mode</div>
+          <div class="mode-toggle" id="modeToggle">
+            <button class="active" data-mode="pure">Pure Math</button>
+            <button data-mode="balance">Balance</button>
+          </div>
+          <p class="mode-desc" id="modeDesc"><b>Greedy per-stat priority</b> — fast, naive, ships today.</p>
+          <div class="job-label">Job profile</div>
+          <div class="job-grid" id="jobGrid"></div>
+          <div class="job-legend">
+            <span><i style="background:var(--cobalt)"></i> Tank</span>
+            <span><i style="background:var(--ok)"></i> Healer</span>
+            <span><i style="background:var(--gold)"></i> DPS</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Export to Game</span><span class="chip gold">GG-PLAN:v1:</span></div>
+        <div class="panel-bd">
+          <p class="mode-desc">Copy and paste into <b>/ttimport</b> back in-game.</p>
+          <textarea id="planOutput" placeholder="Plan string appears after STEP FORWARD." readonly style="min-height:74px;"></textarea>
+          <div class="fb-actions" style="margin-top:10px; flex-direction:row; gap:8px;">
+            <button class="btn full" id="copyPlan">◆ Copy plan</button>
+            <button class="btn full ghost" id="roundTrip">↺ Round-trip ready</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel psa">
+        <div class="panel-hd"><span class="title">TLF Home for Children Without Knives</span></div>
+        <div class="panel-bd">
+          <div class="video-thumb">
+            <span class="v-cap">TLF Home For Children</span>
+            <span class="v-sub">Refia Rakkiri · Last Onion Knight</span>
+            <span class="play"></span>
+          </div>
+          <div class="psa-text">
+            <p>A public service announcement from the Tonberry Liberation Front. Somewhere in the dark, a Tonberry youngling sits with empty hands and a cold lantern — unable to chop, unable to whittle, unable to say "Stab" with any conviction at all.</p>
+            <p>We provide safe underground housing, cultural education, and access to age-appropriate knives. For less than ye'd waste on a single sad teleport, you can restore what was taken.</p>
+            <p>Oi'm not askin' for meself. Oi'm askin' for <em>them</em>.</p>
+            <div class="donate"><button class="btn">🔪 Donate a knife</button></div>
+            <p class="small">Comment "Onion of us." It's not a cult. Probably. The sœnnagins are watching.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-hd"><span class="title">Feedback</span><span class="chip">v1.1.4</span></div>
+        <div class="panel-bd">
+          <p class="mode-desc">Bug, disagreement, confusion, or just saying hi — drop a line and I'll find Refia.</p>
+          <div class="job-label">Category</div>
+          <div class="fb-cat" id="fbCat">
+            <button class="active">Bug / glitch</button>
+            <button>Optimizer disagreement</button>
+            <button>Confusion / unclear</button>
+            <button>Just saying hi</button>
+          </div>
+          <div class="job-label">Message</div>
+          <textarea placeholder="What happened? What did you expect? What's auld the lantern on?" style="min-height:80px;"></textarea>
+          <label class="fb-check"><input type="checkbox" checked /> Include diagnostic info (version, browser, parser state)</label>
+          <div class="fb-actions">
+            <button class="btn full cobalt">⎘ Open GitHub issue</button>
+            <button class="btn full ghost">Copy for Discord</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel manifesto">
+        <div class="panel-hd"><span class="title">TLF Manifesto</span></div>
+        <div class="panel-bd">
+          <span class="line">We carry the lantern. We carry the knife.</span><br />
+          We do not run. We step forward — star once, star true — and we close the gap, one meld at a time.
+          <div class="m-chips">
+            <span class="m-chip">Offline · fast</span>
+            <span class="m-chip">No backend</span>
+            <span class="m-chip cobalt">Round-trip · v1</span>
+          </div>
+        </div>
+      </section>
+
+    </aside>
+  </div>
+</div>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-walk">
+      <div class="ground"></div>
+      <div class="walker"><img src="assets/onion-walker.png" alt="The Onion Knight, walking" /></div>
+    </div>
+    <div class="foot-credo">◆ &nbsp; The Onion Knight stands ready &nbsp; ◆</div>
+    <div class="foot-meta">Tonberry Tactics · v1.1.4 · Cloudflare Pages · No gear · No hope · Just onions</div>
+  </div>
+</footer>
+
+<script>
+  // ── cap-gauge state (mirrors GearGoblin.Core CapGauge) ───────────────────
+  var SOFT_REF = 2780;
+  var STAT_DEFS = ['Critical Hit','Direct Hit','Determination','Tenacity','Skill Speed','Piety'];
+  // empty state values
+  var EMPTY = STAT_DEFS.map(function(l){ return { label:l, value:null, cap:null }; });
+  // populated sample (GNB i735)
+  var SAMPLE = {
+    name:'Refia Rakkiri', job:'GNB', level:100, ilvl:735, melds:'18 / 24',
+    stats:[
+      { label:'Critical Hit', value:2640, cap:2780, proj:2714 },
+      { label:'Direct Hit',   value:1330, cap:2780, proj:1426 },
+      { label:'Determination',value:1910, cap:null,  proj:1968 },
+      { label:'Tenacity',     value:1205, cap:2780 },
+      { label:'Skill Speed',  value:2900, cap:2780 },
+      { label:'Piety',        value:440,  cap:null }
+    ],
+    gear:['Weapon','Head','Body','Hands','Legs','Feet','Ears','Neck','Wrist','Ring','Ring','Off-hand','Soul'],
+    audit:{ empty:['ok','0 open'], wrong:['warn','1 found'], tier:['ok','none'], over:['err','+120 SkS'], sell:['ok','keep all'] },
+    advisor:[
+      ['I','Legs #4 ← DH XII','+96','+0.4%'],
+      ['II','Body #2 ← Crit XII','+74','+0.3%'],
+      ['III','Hands #3 ← Det XII','+58','+0.2%']
+    ]
+  };
+
+  function fmt(n){ return n.toLocaleString('en-US'); }
+  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function gState(v,c){
+    var has=c!=null, r=has&&c>0?v/c:0, over=has&&v>c, near=has&&!over&&r>=0.9;
+    var tick = over ? Math.round(c/v*100) : 100;
+    return { has:has, over:over,
+      fill: v==null?0:(!has?Math.min(85,Math.round(v/SOFT_REF*100)):over?tick:Math.min(100,Math.round(r*100))),
+      tick: tick, bleed: over ? (100-tick) : 0,
+      cls: (over||near) ? 'is-near' : 'is-mid' };
+  }
+  function projPctOf(proj, cap){
+    return cap!=null ? Math.min(100,Math.round(proj/cap*100)) : Math.min(85,Math.round(proj/SOFT_REF*100));
+  }
+
+  function renderStats(stats, animate){
+    var host=document.getElementById('statGrid'); host.innerHTML='';
+    stats.forEach(function(s){
+      var st=gState(s.value,s.cap);
+      var hasProj = s.proj!=null && s.value!=null;
+      var pPct = hasProj ? projPctOf(s.proj, s.cap) : null;
+      var valHtml = s.value==null
+        ? '<span class="gauge-val empty">— <span class="cap">v0.0.1+</span></span>'
+        : '<span class="gauge-val">'+fmt(s.value)+' <span class="cap">'+(!st.has?'/ no cap':st.over?'/ '+fmt(s.cap)+' cap · <span class="over">+'+fmt(s.value-s.cap)+' over</span>':'/ '+fmt(s.cap)+' cap')+'</span></span>';
+      var footHtml = s.value==null ? '<div class="gauge-foot">+0 materia</div>'
+        : hasProj ? '<div class="gauge-foot proj">▸ plan → '+fmt(s.proj)+'</div>' : '';
+      var g=document.createElement('div'); g.className='gauge';
+      g.innerHTML='<div class="gauge-head"><span class="gauge-label">'+s.label+'</span>'+valHtml+'</div>'+
+        '<div class="gauge-track">'+
+          (hasProj ? '<div class="gauge-proj" data-fill="'+pPct+'"></div>' : '')+
+          '<div class="gauge-fill '+st.cls+'" data-fill="'+st.fill+'"></div>'+
+          (st.has?'<div class="cap-tick" style="left:'+st.tick+'%"></div>':'')+
+          (st.bleed>0?'<div class="gauge-bleed" style="left:'+st.tick+'%" data-w="'+st.bleed+'"></div>':'')+
+        '</div>'+footHtml;
+      host.appendChild(g);
+    });
+    requestAnimationFrame(function(){
+      host.querySelectorAll('.gauge-fill').forEach(function(el){ el.style.width=(animate&&!RM?el.getAttribute('data-fill'):(animate?el.getAttribute('data-fill'):0))+'%'; });
+      var doDelta=function(){
+        host.querySelectorAll('.gauge-proj').forEach(function(el){ el.style.width=el.getAttribute('data-fill')+'%'; });
+        host.querySelectorAll('.gauge-bleed').forEach(function(el){ el.style.width=el.getAttribute('data-w')+'%'; });
+      };
+      if(animate){ RM ? doDelta() : setTimeout(doDelta, 720); }
+    });
+  }
+
+  // ── HERO: live close-the-gap demo ─────────────────────────────────────────
+  var HERO = [
+    { label:'Critical Hit', value:2410, cap:2780, proj:2680 },
+    { label:'Direct Hit',   value:1180, cap:2780, proj:1456 }
+  ];
+  function buildHero(){
+    var host=document.getElementById('heroGauges'); host.innerHTML='';
+    HERO.forEach(function(s){
+      var fillPct=Math.round(s.value/s.cap*100), pPct=Math.round(s.proj/s.cap*100);
+      var near=fillPct>=90;
+      var gap=s.cap-s.value, closes=s.proj-s.value;
+      var g=document.createElement('div'); g.className='hero-gauge';
+      g.innerHTML='<div class="hg-head"><span class="hg-label">'+s.label+'</span>'+
+        '<span class="hg-val"><span class="cur">'+fmt(s.value)+'</span> <span class="cap">/ '+fmt(s.cap)+' cap</span> <span class="proj">▸ '+fmt(s.proj)+'</span></span></div>'+
+        '<div class="hero-track"><div class="hg-proj" data-fill="'+pPct+'"></div>'+
+          '<div class="hg-fill'+(near?' is-near':'')+'" data-fill="'+fillPct+'"></div>'+
+          '<div class="hero-tick"></div></div>'+
+        '<div class="hg-gap">'+fmt(gap)+' to cap · <span class="closes">plan closes '+fmt(closes)+'</span></div>';
+      host.appendChild(g);
+    });
+  }
+  function playHero(){
+    var host=document.getElementById('heroGauges');
+    var fills=host.querySelectorAll('.hg-fill'), projs=host.querySelectorAll('.hg-proj');
+    var head=document.querySelector('.hero-head');
+    if(RM){
+      fills.forEach(function(f){ f.style.width=f.dataset.fill+'%'; });
+      projs.forEach(function(p){ p.style.width=p.dataset.fill+'%'; });
+      head.classList.add('in'); host.classList.add('show-proj'); return;
+    }
+    fills.forEach(function(f){ f.style.width='0%'; });
+    projs.forEach(function(p){ p.style.width='0%'; });
+    head.classList.remove('in'); host.classList.remove('show-proj');
+    requestAnimationFrame(function(){
+      setTimeout(function(){ fills.forEach(function(f){ f.style.width=f.dataset.fill+'%'; }); }, 160);
+      setTimeout(function(){ head.classList.add('in'); }, 720);
+      setTimeout(function(){ projs.forEach(function(p){ p.style.width=p.dataset.fill+'%'; }); host.classList.add('show-proj'); }, 1750);
+    });
+  }
+
+  // ── job grid ──────────────────────────────────────────────────────────────
+  var JOBS = [
+    [['PLD','tank'],['WAR','tank'],['DRK','tank'],['GNB','tank']],
+    [['WHM','healer'],['SCH','healer'],['AST','healer'],['SGE','healer']],
+    [['MNK','dps'],['DRG','dps'],['NIN','dps'],['SAM','dps'],['RPR','dps'],['VPR','dps']],
+    [['BRD','dps'],['MCH','dps'],['DNC','dps']],
+    [['BLM','dps'],['RDM','dps'],['SMN','dps'],['PCT','dps']]
+  ];
+  var activeJob='GNB';
+  function renderJobs(){
+    var host=document.getElementById('jobGrid'); host.innerHTML='';
+    JOBS.forEach(function(rowArr){
+      var row=document.createElement('div'); row.className='job-row';
+      rowArr.forEach(function(j){
+        var b=document.createElement('div');
+        b.className='job '+j[1]+(j[0]===activeJob?' active':'');
+        b.textContent=j[0];
+        b.onclick=function(){ activeJob=j[0]; renderJobs(); };
+        row.appendChild(b);
+      });
+      host.appendChild(row);
+    });
+  }
+
+  // ── populate / clear ──────────────────────────────────────────────────────
+  function setText(id,t){ document.getElementById(id).textContent=t; }
+  function loadSample(){
+    var s=SAMPLE;
+    setText('advName',s.name); setText('advJob',s.job); setText('advLevel',s.level);
+    setText('advIlvl','i'+s.ilvl); setText('advMelds',s.melds);
+    document.getElementById('advJob').classList.remove('dim');
+    document.getElementById('advLevel').classList.remove('dim');
+    document.getElementById('advIlvl').classList.remove('dim');
+    document.getElementById('advMelds').classList.remove('dim');
+    var st=document.getElementById('advStatus'); st.textContent='audited'; st.style.color='var(--ok)'; st.style.borderColor='rgba(58,157,110,0.4)';
+    document.getElementById('advTag').textContent='linked';
+    activeJob=s.job; renderJobs();
+
+    // gear
+    document.getElementById('gearEmpty').hidden=true;
+    var gg=document.getElementById('gearGrid'); gg.hidden=false; gg.innerHTML='';
+    s.gear.forEach(function(name){
+      var d=document.createElement('div'); d.className='gear-slot';
+      d.innerHTML='<span class="ico"></span><span><span class="g-name">'+name+'</span><br><span class="g-meta">i'+s.ilvl+' · melded</span></span>';
+      gg.appendChild(d);
+    });
+    setText('gearCount','13 / 13');
+
+    renderStats(s.stats, true);
+
+    // advisor
+    document.getElementById('advisorEmpty').hidden=true;
+    var al=document.getElementById('advisorList'); al.hidden=false; al.innerHTML='';
+    al.style.display='flex'; al.style.flexDirection='column'; al.style.gap='8px';
+    s.advisor.forEach(function(r){
+      var d=document.createElement('div');
+      d.style.cssText='display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line-soft);border-radius:7px;background:var(--sink);';
+      d.innerHTML='<span style="font-family:var(--f-pixel);font-size:9px;color:var(--gold-bright);">'+r[0]+'</span>'+
+        '<span style="font-family:var(--f-data);font-size:13px;color:var(--fg);flex:1;">'+r[1]+' <span style="color:var(--ok);">('+r[2]+')</span></span>'+
+        '<span class="chip cobalt">'+r[3]+'</span>';
+      al.appendChild(d);
+    });
+
+    // audit
+    var a=s.audit;
+    [['auEmpty',a.empty],['auWrong',a.wrong],['auTier',a.tier],['auOver',a.over],['auSell',a.sell]].forEach(function(x){
+      var row=document.getElementById(x[0]); row.className='audit-row '+x[1][0];
+      row.querySelector('.a-val').textContent=x[1][1];
+    });
+
+    document.getElementById('planOutput').value='GG-PLAN:v1:eyJWIjoxLCJqb2IiOiJHTkIiLCJtZWxkcyI6W119…';
+    document.getElementById('exportInput').value='GG-EXPORT:v2:eyJWIjoyLCJqb2IiOiJHTkIiLCJsdmwiOjEwMCwiaWx2bCI6NzM1fQ…';
+  }
+
+  function clearAll(){ location.reload(); }
+
+  // ── mode + feedback toggles ───────────────────────────────────────────────
+  document.getElementById('modeToggle').addEventListener('click', function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    this.querySelectorAll('button').forEach(function(x){ x.classList.remove('active'); });
+    b.classList.add('active');
+    document.getElementById('modeDesc').innerHTML = b.dataset.mode==='pure'
+      ? '<b>Greedy per-stat priority</b> — fast, naive, ships today.'
+      : '<b>Balance consensus weights</b> — community stat priorities per job.';
+  });
+  document.getElementById('fbCat').addEventListener('click', function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    this.querySelectorAll('button').forEach(function(x){ x.classList.remove('active'); });
+    b.classList.add('active');
+  });
+
+  document.getElementById('sampleBtn').onclick=loadSample;
+  document.getElementById('stepBtn').onclick=function(){
+    if(document.getElementById('exportInput').value.trim()) loadSample(); else loadSample();
+  };
+  document.getElementById('clearBtn').onclick=clearAll;
+  document.getElementById('heroReplay').onclick=playHero;
+
+  // init: hero demo + empty tool state
+  buildHero(); playHero();
+  renderStats(EMPTY, false);
+  renderJobs();
+</script>
+</body>
+</html>

@@ -7,12 +7,16 @@
       @Value.ToString("N0")
       <span class="cap">
         @if (Cap is null) { <text>/ no cap</text> }
-        else if (IsOver) { <text>/ @Cap.Value.ToString("N0") cap · +@(Value - Cap.Value) over</text> }
+        else if (IsOver) { <text>/ @Cap.Value.ToString("N0") cap · <span class="over">+@(Value - Cap.Value) over</span></text> }
         else { <text>/ @Cap.Value.ToString("N0") cap</text> }
       </span>
     </span>
   </div>
   <div class="gauge-track">
+    @if (IsOver)
+    {
+      <div class="gauge-bleed" style="left:100%; width:@(BleedPercent)%"></div>
+    }
     <div class="gauge-fill @StateClass" style="width:@(FillPercent)%"></div>
     @if (Cap is not null)
     {
@@ -40,6 +44,9 @@
 
     // Cap line sits at 100% for normal, slightly inside for over (so the over-fill reads past it).
     private int CapTickPercent => IsOver ? 99 : 100;
+
+    // How far the bleed bar extends (maxes out at ~20% of track width visually)
+    private int BleedPercent => IsOver && Cap.HasValue ? Math.Min(20, (int)Math.Round(((double)Value - Cap.Value) / Cap.Value * 100)) : 0;
 
     // State class drives the gradient + glow defined in styles.css.
     private string StateClass =>

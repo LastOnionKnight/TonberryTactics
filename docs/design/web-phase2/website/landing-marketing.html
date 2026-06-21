@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tonberry Tactics — Know your real caps</title>
+<meta name="description" content="A Final Fantasy XIV gear & materia optimizer. Paste your gear, see your real substat caps, and plan the melds to close the gap." />
+<meta property="og:title" content="Tonberry Tactics — Know your real caps" />
+<meta property="og:description" content="Real substat totals, straight from the game. See how far each stat sits from its cap." />
+<meta property="og:image" content="assets/og-banner.png" />
+<meta property="og:type" content="website" />
+
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon-180.png" />
+<link rel="icon" type="image/svg+xml" href="assets/tt-icon.svg" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+<!-- ─── NAV ─────────────────────────────────────────────────────────────── -->
+<header class="nav" id="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top">
+      <img class="mark" src="assets/tt-lantern-mark.svg" alt="" />
+      <span class="name">Tonberry Tactics</span>
+    </a>
+    <nav class="nav-links">
+      <a class="link" href="#flow">How it works</a>
+      <a class="link" href="#profile">Stat profile</a>
+      <a class="link" href="#features">Features</a>
+      <span class="ver-pill">v1.3.0</span>
+      <a class="btn btn-ghost" href="#get">Get the plugin</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ─── HERO (cinematic banner) ─────────────────────────────────────────── -->
+<section class="hero" id="top">
+  <img class="hero-bg" src="assets/og-banner.png" alt="Tonberry Tactics — Know your real caps" />
+  <div class="hero-foot">
+    <p class="subline">Real substat totals, straight from the game — and exactly how far each one sits from its cap.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#flow">Paste your gear</a>
+      <a class="btn btn-ghost" href="#get">Get the plugin</a>
+    </div>
+  </div>
+  <div class="scroll-cue">▼ &nbsp; scroll</div>
+</section>
+
+<!-- ─── FLOW ────────────────────────────────────────────────────────────── -->
+<section class="band" id="flow">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">How it works</span>
+      <h2>Three steps, <span class="accent">one paste</span></h2>
+      <p>No account, no upload. The export string never leaves your clipboard until you paste it.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <span class="num">STEP 01</span>
+        <h3>Export in-game</h3>
+        <p>Run <strong>/ttexport</strong> in the plugin. Your gear, materia, and full substat totals copy as a single string.</p>
+        <div class="io"><b>GG-EXPORT:v2:</b>eyJWIjoy…</div>
+      </div>
+      <div class="step reveal">
+        <span class="num">STEP 02</span>
+        <h3>Paste &amp; optimize</h3>
+        <p>Drop the string in. Tonberry Tactics audits every meld — under-tier, overcap, wrong-stat — and ranks the fixes.</p>
+        <div class="io">7 melds flagged · <b>3 wasted</b></div>
+      </div>
+      <div class="step reveal">
+        <span class="num">STEP 03</span>
+        <h3>Import the plan</h3>
+        <p>Copy the plan back, run <strong>/ttimport</strong>, and the plugin walks you through each meld at the board.</p>
+        <div class="io"><b>GG-PLAN:v1:</b>eyJWIjox…</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STAT PROFILE (live gauges) ──────────────────────────────────────── -->
+<section class="band profile-band" id="profile">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">The signature</span>
+      <h2>Your <span class="accent">real</span> caps. Not an estimate.</h2>
+      <p>Schema v2 carries your actual totals — so every bar reads a real value against a real cap.</p>
+    </div>
+    <div class="profile-card reveal">
+      <div class="ph">
+        <h3>Refia Rakkiri</h3>
+        <span class="meta">Gunbreaker · Lv 100 · i735</span>
+      </div>
+      <div id="gauges"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--lantern-gold)"></i> Building</span>
+        <span><i class="dot" style="background:var(--cobalt)"></i> Near cap</span>
+        <span><i class="dot" style="background:var(--status-over)"></i> Overcapped (wasted)</span>
+        <span><i class="dot" style="background:var(--ink-panel);opacity:0.32"></i> Cap line</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FEATURES ────────────────────────────────────────────────────────── -->
+<section class="band" id="features">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">What it does</span>
+      <h2>Built for the meld board</h2>
+    </div>
+    <div class="features">
+      <div class="feature reveal">
+        <img class="ft-mark" src="assets/tt-lantern-mark.svg" alt="" />
+        <h4>Real-cap awareness</h4>
+        <p>Reads your post-gear substat totals and shows the exact gap to each cap — no spreadsheets, no guesswork.</p>
+      </div>
+      <div class="feature reveal">
+        <img class="ft-mark" src="assets/tt-lantern-mark.svg" alt="" />
+        <h4>Overcap &amp; waste audit</h4>
+        <p>Flags every wasted point — wrong-stat melds, over-tier sockets, and stats pushed past their ceiling.</p>
+      </div>
+      <div class="feature reveal">
+        <img class="ft-mark" src="assets/tt-lantern-mark.svg" alt="" />
+        <h4>Meld planner</h4>
+        <p>Ranks the highest-impact fixes and walks you through them at the board, one socket at a time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA ─────────────────────────────────────────────────────────────── -->
+<section class="band cta-band" id="get">
+  <div class="wrap reveal">
+    <img class="mark" src="assets/tt-lantern-mark.svg" alt="" />
+    <h2>Carry the lantern.</h2>
+    <p>Tonberry Tactics is a Dalamud plugin with a companion web optimizer. Free, open, and built for raiders chasing the cap.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#">Install via Dalamud</a>
+      <a class="btn btn-ghost" href="#flow">Open the web optimizer</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ──────────────────────────────────────────────────────────── -->
+<footer class="site">
+  <div class="wrap foot">
+    <span class="by">Built by <span class="knight">the Last Onion Knight</span> — for the lads still chasing the cap.</span>
+    <span class="links">
+      <a href="#">Plugin</a><a href="#">Changelog</a><a href="#">TLF</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+  // ── cap-gauge logic (mirrors GearGoblin.Core CapGauge state math) ─────────
+  var SOFT_REFERENCE = 2780;
+  var STATS = [
+    { label:'Critical Hit Rate', value:2640, cap:2780 },
+    { label:'Direct Hit Rate',   value:1330, cap:2780 },
+    { label:'Determination',     value:1910, cap:null },
+    { label:'Tenacity',          value:1205, cap:2780 },
+    { label:'Skill Speed',       value:2810, cap:2780 }
+  ];
+
+  function fmt(n){ return n.toLocaleString('en-US'); }
+
+  function gaugeState(value, cap){
+    var hasCap = cap !== null && cap !== undefined;
+    var ratio = hasCap && cap > 0 ? value / cap : 0;
+    var isOver = hasCap && value > cap;
+    var isNear = hasCap && !isOver && ratio >= 0.90;
+    var fill = !hasCap
+      ? Math.min(85, Math.round(value / SOFT_REFERENCE * 100))
+      : Math.min(100, Math.round(ratio * 100));
+    return {
+      hasCap: hasCap, isOver: isOver,
+      fill: fill,
+      tick: isOver ? 99 : 100,
+      cls: isOver ? 'is-over' : isNear ? 'is-near' : 'is-mid'
+    };
+  }
+
+  function buildGauges(){
+    var host = document.getElementById('gauges');
+    STATS.forEach(function(s){
+      var st = gaugeState(s.value, s.cap);
+      var capTxt = !st.hasCap ? '/ no cap'
+        : st.isOver ? '/ ' + fmt(s.cap) + ' cap · <span class="over">+' + fmt(s.value - s.cap) + ' over</span>'
+        : '/ ' + fmt(s.cap) + ' cap';
+      var g = document.createElement('div');
+      g.className = 'gauge';
+      g.innerHTML =
+        '<div class="gauge-head"><span class="gauge-label">' + s.label + '</span>' +
+        '<span class="gauge-val">' + fmt(s.value) + ' <span class="cap">' + capTxt + '</span></span></div>' +
+        '<div class="gauge-track">' +
+          '<div class="gauge-fill ' + st.cls + '" data-fill="' + st.fill + '"></div>' +
+          (st.hasCap ? '<div class="cap-tick" style="left:' + st.tick + '%"></div>' : '') +
+        '</div>';
+      host.appendChild(g);
+    });
+  }
+
+  function fillGauges(){
+    document.querySelectorAll('.gauge-fill').forEach(function(el){
+      el.style.width = el.getAttribute('data-fill') + '%';
+    });
+  }
+
+  // ── nav scroll state ──────────────────────────────────────────────────────
+  var nav = document.getElementById('nav');
+  function onScroll(){ nav.classList.toggle('scrolled', window.scrollY > 40); }
+  window.addEventListener('scroll', onScroll, { passive:true });
+  onScroll();
+
+  // ── scroll reveal + gauge fill on view ────────────────────────────────────
+  buildGauges();
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        if(e.target.id === 'profile') fillGauges();
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold:0.18 });
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  io.observe(document.getElementById('profile'));
+</script>
+</body>
+</html>
