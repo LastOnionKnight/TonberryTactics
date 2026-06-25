@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sprite → Job mapping</title>
+<style>
+  :root{
+    --bg:#0a0f18; --panel:#101826; --line:rgba(255,255,255,.09);
+    --gold:#e3b341; --fg:#e8edf4; --muted:#8595ab; --cobalt:#4f7fd0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif;padding:28px 32px 60px;}
+  h1{font-family:"Cinzel",Georgia,serif;color:var(--gold);font-size:24px;margin:0 0 4px;letter-spacing:.5px;}
+  p.sub{color:var(--muted);margin:0 0 24px;font-size:14px;line-height:1.5;max-width:680px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:14px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 10px 11px;text-align:center;position:relative;}
+  .card .n{position:absolute;top:7px;left:9px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .imgwrap{height:84px;display:flex;align-items:flex-end;justify-content:center;margin:6px 0 9px;}
+  .imgwrap img{image-rendering:pixelated;height:78px;width:auto;filter:drop-shadow(0 3px 5px rgba(0,0,0,.5));}
+  .guess{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;color:var(--gold);letter-spacing:1px;}
+  .conf{display:inline-block;margin-top:5px;font-size:10px;padding:2px 7px;border-radius:20px;letter-spacing:.4px;}
+  .sure{background:rgba(79,127,208,.16);color:#9cc0ff;border:1px solid rgba(79,127,208,.4);}
+  .maybe{background:rgba(227,179,65,.13);color:var(--gold);border:1px solid rgba(227,179,65,.4);}
+  .legend{display:flex;gap:16px;margin:18px 0 22px;font-size:12px;color:var(--muted);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:10px;height:10px;border-radius:50%;}
+</style>
+</head>
+<body>
+  <h1>Sprite → Job mapping — please confirm</h1>
+  <p class="sub">Here's my best guess for each of the 22 pixel sprites. Tell me which numbers are wrong and what they should be (e.g. "#9 is GNB, #16 is DNC"). Blue = confident, gold = a guess I need you to verify. The four labeled <strong>?</strong> I couldn't place at all.</p>
+  <div class="legend">
+    <span><span class="dot" style="background:#4f7fd0;"></span>Confident</span>
+    <span><span class="dot" style="background:#e3b341;"></span>Guess — verify</span>
+  </div>
+  <div class="grid" id="grid"></div>
+  <script>
+    const items = [
+      [1,"GNB","sure"],[2,"DRK","sure"],[3,"MCH","maybe"],[4,"PLD","sure"],
+      [5,"?","maybe"],[6,"SAM","sure"],[7,"DRG","sure"],[8,"NIN","maybe"],
+      [9,"?","maybe"],[10,"RPR","sure"],[11,"?","maybe"],[12,"BRD","maybe"],
+      [13,"BRD?","maybe"],[14,"SMN","maybe"],[15,"RDM","sure"],[16,"?","maybe"],
+      [17,"BLM","sure"],[18,"WAR?","maybe"],[19,"WAR","sure"],[20,"WHM","maybe"],
+      [21,"PCT","sure"],[22,"SCH","maybe"]
+    ];
+    const g = document.getElementById('grid');
+    items.forEach(([n,job,conf])=>{
+      const num = String(n).padStart(2,'0');
+      const c = document.createElement('div');
+      c.className='card';
+      c.innerHTML = '<span class="n">#'+n+'</span>'+
+        '<div class="imgwrap"><img src="assets/jobs-px/'+num+'.png" alt="sprite '+n+'"></div>'+
+        '<div class="guess">'+job+'</div>'+
+        '<span class="conf '+conf+'">'+(conf==='sure'?'confident':'verify')+'</span>';
+      g.appendChild(c);
+    });
+  </script>
+</body>
+</html>
