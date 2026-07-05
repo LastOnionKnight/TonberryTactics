@@ -1,3 +1,8 @@
+## [1.5.7] - 2026-07-05
+
+### Changed
+- Version bump for trinity lockstep. Incorporates Core submodule updates (adds `IconId` field to `MeldablePiece`). No functional web changes.
+
 ## [1.5.2] - 2026-07-05
 
 ### Fixed
