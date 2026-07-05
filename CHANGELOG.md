@@ -1,3 +1,24 @@
+## [1.5.2] - 2026-07-05
+
+### Fixed
+- **Cloudflare Pages deploy pipeline restored:** Resolved a `CS0104` type-name 
+  collision between `TonberryTactics.Models.ExportPayloadV2` and 
+  `GearGoblin.Core.ExportPayloadV2` in `Services/MeldOptimizerAdapter.cs`. This 
+  collision silently broke every web build since v1.5.0, leaving 
+  `tonberrytactics.pages.dev` stuck serving v1.4.0 for 11 days despite v1.5.0 
+  and v1.5.1 tags pushing to origin. Fixed by fully-qualifying the reference to 
+  `TonberryTactics.Models.ExportPayloadV2`. Root-cause resolution of the 
+  duplicate type is tracked as Architecture Debt for a follow-on release.
+- **Header pairing text refresh:** Updated stale `paired with plugin v0.6.0+` 
+  text to `paired with plugin v1.5.x`. The old string predates the Tonberry 
+  Tactics brand rename and the v1.x plugin era.
+
+### Changed
+- **Materia advisor sort order:** Recommendations now render in gear slot order 
+  (MainHand → Head → Body → Hands → Legs → Feet → Ears → Neck → Wrists → Rings) 
+  instead of raw job-priority order. Users can now scan advice piece-by-piece 
+  against their equipped gear rather than mentally re-sorting a priority list.
+
 ## [1.2.0] - 2026-06-01
 
 ### Fixed

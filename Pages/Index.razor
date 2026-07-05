@@ -18,8 +18,8 @@
   <div class="wrap subbar-inner">
     <span class="tagline">"No gear. No hope. No pants. Just onions."</span>
     <div class="subbar-meta">
-      <span class="chip gold">v 1.5.1</span>
-      <span class="sub-plugin">paired with plugin v0.6.0+</span>
+      <span class="chip gold">v 1.5.2</span>
+      <span class="sub-plugin">paired with plugin v1.5.x</span>
       <span class="sub-div">TLF · Gear Division</span>
       <span class="patch-pill">◆ Evercold · Patch 7.5</span>
       <button class="btn ghost" onclick="window.setTheme(window.getTheme() === 'dark' ? 'light' : 'dark')" title="Toggle Theme" style="padding:4px 8px; border:1px solid var(--line); border-radius:4px; background:var(--sink); cursor:pointer;">
@@ -210,13 +210,13 @@
       </section>
 
       <section class="panel">
-        <div class="panel-hd"><span class="title">Materia Advisor</span><span class="chip" id="advisorChip">job priority order</span></div>
+        <div class="panel-hd"><span class="title">Materia Advisor</span><span class="chip" id="advisorChip">gear slot order</span></div>
         <div class="panel-bd">
           @if (Optimization?.PlanRecommendations is { Count: > 0 } recsList)
           {
               <div id="advisorList">
                   @{ int idx = 1; }
-                  @foreach (var rec in recsList)
+                  @foreach (var rec in recsList.OrderBy(r => r.Piece).ThenBy(r => r.SlotIndex))
                   {
                       var code = MateriaIcon(rec.Materia.Stat.ToString());
                       <div class="advisor-row">

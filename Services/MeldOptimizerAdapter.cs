@@ -9,7 +9,7 @@ namespace TonberryTactics.Services;
 
 public static class MeldOptimizerAdapter
 {
-    public static OptimizerResult Optimize(ExportPayloadV2 payload)
+    public static OptimizerResult Optimize(TonberryTactics.Models.ExportPayloadV2 payload)
     {
         var pieces = new List<MeldablePiece>();
 
