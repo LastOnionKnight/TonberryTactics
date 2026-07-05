@@ -1,3 +1,8 @@
+## [1.5.7b] - 2026-07-05
+
+### Changed
+- Version bump for trinity lockstep (plugin readability + FontAwesome chrome glyphs). No functional web changes.
+
 ## [1.5.7] - 2026-07-05
 
 ### Changed
