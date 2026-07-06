@@ -345,7 +345,7 @@
         <div class="panel-hd"><span class="title">TLF Home for Children Without Knives</span></div>
         <div class="panel-bd">
           <div class="psa-emblem-wrap"><img class="psa-emblem" src="assets/tlf-flame-logo-768.png" alt="Tonberry Liberation Front" /></div>
-          <div class="video-thumb">
+          <div class="video-thumb" id="psaVideo" onclick="playPsaVideo()" role="button" tabindex="0" title="Play — TLF Home For Children">
             <img class="vt-sprite" src="assets/rags-action.png" alt="" />
             <span class="v-cap">TLF Home For Children</span>
             <span class="v-sub">Refia Rakkiri · Last Onion Knight</span>
@@ -448,6 +448,22 @@
         '<div class="hg-gap">'+fmt(gap)+' to cap · <span class="closes">plan closes '+fmt(closes)+'</span></div>';
       host.appendChild(g);
     });
+  }
+  // Click-to-play the TLF PSA video: keep the custom thumbnail until the user
+  // clicks, then swap in the real YouTube player (nocookie + autoplay on gesture).
+  function playPsaVideo(){
+    var box=document.getElementById('psaVideo');
+    if(!box || box.dataset.playing==='1') return;
+    box.dataset.playing='1';
+    var f=document.createElement('iframe');
+    f.src='https://www.youtube-nocookie.com/embed/HNttJA6kKWo?autoplay=1&rel=0';
+    f.title='TLF Home For Children';
+    f.allow='autoplay; encrypted-media; picture-in-picture; web-share';
+    f.allowFullscreen=true;
+    f.referrerPolicy='strict-origin-when-cross-origin';
+    f.style.cssText='position:absolute; inset:0; width:100%; height:100%; border:0;';
+    box.innerHTML='';
+    box.appendChild(f);
   }
   function playHero(){
     var host=document.getElementById('heroGauges'); if(!host) return;

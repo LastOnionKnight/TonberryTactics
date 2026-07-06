@@ -1,3 +1,8 @@
+## [1.5.7c] - 2026-07-06
+
+### Fixed
+- **PSA Video**: Wired the TLF Home for Children thumbnail to properly embed and play the YouTube video on click.
+
 ## [1.5.7b] - 2026-07-05
 
 ### Changed
