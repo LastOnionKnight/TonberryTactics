@@ -770,9 +770,14 @@
                         ? $"{m.StatName} not in {jobAbbr} priority"
                         : $"Tier {RomanGrade(displayGrade)} below cap (XII)";
 
+                    // v1.5.8 — the +N in the under-tier hint is the BATTLE
+                    // materia value table; DoH/DoL materia carry different
+                    // values, so their hint omits the number.
                     var detail = wrongStat
                         ? $"→ Replace with priority stat ({string.Join(" › ", priority.Take(3))})"
-                        : $"→ Upgrade to Tier XII (+{GearGoblin.Core.MateriaTiers.SubstatValue(capTier)})";
+                        : GearGoblin.Core.StatNames.IsCraftGather(canonical)
+                            ? "→ Upgrade to Tier XII"
+                            : $"→ Upgrade to Tier XII (+{GearGoblin.Core.MateriaTiers.SubstatValue(capTier)})";
 
                     findings.Add(new AuditFinding(
                         Piece:              piece.Slot,
@@ -831,6 +836,12 @@
 
             foreach (var stat in currentMeldStats.Keys)
             {
+                // v1.5.8 — DoH/DoL stats have no battle-style piece cap
+                // (SubstatCap derives from battle columns; meaningless for
+                // crafting/gathering gear). Skip so correct crafter melds
+                // never flag as overcapped.
+                if (GearGoblin.Core.Materia.SubstatExt.IsCraftGather(stat)) continue;
+
                 var room = GearGoblin.Core.Materia.StatCaps.RoomFor(meldablePiece, stat);
                 if (room < 0)
                 {
