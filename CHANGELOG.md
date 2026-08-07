@@ -1,3 +1,9 @@
+## [1.6.0] - 2026-08-07
+
+### Added
+- **DoH/DoL Support**: Added support for Crafter and Gatherer stats.
+- **Trinity Lockstep**: Bumped version to v1.6.0 to lockstep with the plugin and core.
+
 ## [1.5.7c] - 2026-07-06
 
 ### Fixed
