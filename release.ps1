@@ -5,8 +5,13 @@
 #   1. Finds the .csproj file in the current directory.
 #   2. Reads <Version>X.Y.Z</Version> from it.
 #   3. Stages all currently-modified tracked files.
+#   3.5 v0.4.6 BUILD GATE (carried forward in v0.4.7): runs `dotnet build --configuration Release` and
+#       bails on failure. Catches typos, unclosed tags, broken imports
+#       locally instead of letting them reach origin/main.
 #   4. Pulls the CHANGELOG entry for this version (if CHANGELOG.md exists).
-#   5. Commits with that message.
+#   5. Commits with that message (now BOM-free under v0.4.6 + v0.4.7 â€” uses
+#      [System.IO.File]::WriteAllText with UTF8Encoding(false) instead of
+#      Set-Content -Encoding UTF8 which emits a BOM under PS 5.1).
 #   6. Tags vX.Y.Z.
 #   7. Pushes commits and tag to origin/main with --follow-tags.
 #
@@ -19,21 +24,23 @@
 #   -DryRun       Show what would happen, do not commit/tag/push.
 #   -Message msg  Override the auto-generated commit message.
 #   -SkipPush     Commit and tag locally, do not push.
+#   -SkipBuild    Skip the dotnet build gate (rare; only for fast iteration
+#                 when you've just verified the build manually).
 
 param(
     [switch]$DryRun,
     [string]$Message = "",
     [switch]$SkipPush,
-    [switch]$SkipBuild   # v0.6.5.2+: bypass the dotnet build gate (rare; fast-iterate only)
+    [switch]$SkipBuild   # v0.4.6+: bypass the dotnet build gate (rare; fast-iterate only)
 )
 
 $ErrorActionPreference = "Stop"
 
 # ---- 1. Find the csproj ------------------------------------------------------
 
-$csprojFiles = Get-ChildItem -Path . -Filter "*.csproj" -File
+$csprojFiles = Get-ChildItem -Path $PSScriptRoot -Filter "*.csproj" -File
 if ($csprojFiles.Count -eq 0) {
-    Write-Host "ERROR: No .csproj file found in $(Get-Location)." -ForegroundColor Red
+    Write-Host "ERROR: No .csproj file found in $PSScriptRoot." -ForegroundColor Red
     Write-Host "Run this script from the project root." -ForegroundColor Yellow
     exit 1
 }
@@ -51,12 +58,11 @@ Write-Host "  release.ps1" -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "  Project:  $projectName" -ForegroundColor White
 Write-Host "  csproj:   $($csproj.Name)" -ForegroundColor White
-Write-Host "  cwd:      $(Get-Location)" -ForegroundColor White
+Write-Host "  cwd:      $PSScriptRoot" -ForegroundColor White
 
 # ---- 2. Read the version from csproj -----------------------------------------
 
-$utf8 = New-Object System.Text.UTF8Encoding $false
-$csprojContent = [System.IO.File]::ReadAllText($csproj.FullName, $utf8)
+$csprojContent = Get-Content $csproj.FullName -Raw
 if ($csprojContent -match "<Version>([\d\.]+)</Version>") {
     $version = $Matches[1]
 } else {
@@ -95,17 +101,23 @@ if ($existingTag) {
 $branch = git rev-parse --abbrev-ref HEAD
 Write-Host "  Branch:   $branch" -ForegroundColor White
 
-# ---- 3a. Sync with remote (v0.6.5.2+) ----------------------------------------
+# ---- 2.5. Sync with remote (v0.6.5.2+) --------------------------------------
 #
-# Fetch and rebase before staging. Even though the web repo doesn't have
-# the plugin's auto-bot pattern (no repo.json equivalent), this matters
-# whenever a CI workflow or a second machine has pushed since our last
-# pull — without this step the final `git push` is rejected as
-# non-fast-forward, exactly the failure mode that hit Web on the v0.6.5.1
-# first attempt (we shipped a broken commit + tag, then had to force-push
-# the recovery commit on top of a state we couldn't reach).
+# Fetch and rebase before staging. Without this step, any commits on
+# origin/main that we don't have locally (most commonly the
+# github-actions[bot] repo.json bumps that fire after every tag push) will
+# cause the final `git push` to be rejected as non-fast-forward â€” exactly
+# the failure mode that derailed the v0.6.5.1 ship.
 #
-# --autostash handles the working-tree dropin changes during rebase.
+# --autostash handles the working-tree dropin changes during the rebase:
+# git stashes them automatically, runs the rebase, then restores them on
+# top. If the rebase would conflict with our dropin files (unlikely; the
+# bot only touches repo.json), the rebase aborts cleanly and we surface
+# the error.
+#
+# We do this BEFORE the status display so the "Changes to be committed"
+# view reflects the post-rebase state, not whatever was in the working
+# tree before sync.
 
 Write-Host "Syncing with origin/$branch (fetch + rebase + autostash)..." -ForegroundColor Cyan
 git fetch origin $branch
@@ -139,21 +151,39 @@ Write-Host "Changes to be committed:" -ForegroundColor Yellow
 git status --short
 Write-Host ""
 
-# ---- 3.5. Build gate (v0.6.5.2+) ---------------------------------------------
+# ---- 3.5. Build gate (v0.4.6+, carried forward) -----------------------------------------------
 #
-# `dotnet build --configuration Release` before commit/tag/push. Web's
-# release.ps1 lacked this gate prior to v0.6.5.2 — the v0.6.5.1 first-pass
-# AssemblyVersion regression (`0.6.5.1.0`, 5 components, invalid per CS7034)
-# was caught by Core's and Plugin's gates and aborted both releases cleanly,
-# but Web's gateless script committed + tagged + pushed the broken csproj
-# to GitHub anyway, requiring a manual force-push recovery to clean up.
-# Symmetry with Core and Plugin now: no component releases without a green
-# Release build locally.
+# Run `dotnet build` against the project before we commit/tag/push, so that
+# a typo, unclosed </div>, or import-resolution issue is caught locally
+# instead of reaching origin/main and only failing in CI / Cloudflare's
+# build queue (which is how the v0.4.5 era TT hotfix friction happened).
 #
-# Configuration is Release (same flavor Cloudflare Pages builds).
+# Configuration is Release by default â€” same build flavor that ships to
+# users. Output goes through Out-Host so the build log is visible in the
+# console; we capture the exit code to decide whether to bail.
 
 if (-not $SkipBuild) {
     Write-Host "Running build gate: dotnet build --configuration Release..." -ForegroundColor Cyan
+
+    # Extract changelog for embedded resource
+    $changelogPath = Join-Path $PSScriptRoot "CHANGELOG.md"
+    if (Test-Path $changelogPath) {
+        $utf8 = New-Object System.Text.UTF8Encoding $false
+        $changelogContent = [System.IO.File]::ReadAllText($changelogPath, $utf8)
+        $parts = $changelogContent -split '(?m)^## \['
+        $numToTake = [Math]::Min(16, $parts.Length)
+        $extracted = $parts[0]
+        for ($i = 1; $i -lt $numToTake; $i++) {
+            $extracted += "## [" + $parts[$i]
+        }
+        $resourcePath = Join-Path $PSScriptRoot "Resources\about-changelog.txt"
+        $dir = Split-Path $resourcePath
+        if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($resourcePath, $extracted.Trim(), $utf8NoBom)
+        Write-Host "Extracted $( $numToTake - 1 ) changelog entries to $resourcePath" -ForegroundColor Cyan
+    }
+
     Write-Host "----------------------------------------" -ForegroundColor DarkGray
     dotnet build --configuration Release --nologo
     $buildExit = $LASTEXITCODE
@@ -174,7 +204,7 @@ if (-not $SkipBuild) {
 # ---- 4. Generate commit message from CHANGELOG (if it exists) ----------------
 
 if (-not $Message) {
-    $changelogPath = Join-Path (Get-Location) "CHANGELOG.md"
+    $changelogPath = Join-Path $PSScriptRoot "CHANGELOG.md"
     if (Test-Path $changelogPath) {
         $utf8 = New-Object System.Text.UTF8Encoding $false
         $changelog = [System.IO.File]::ReadAllText($changelogPath, $utf8)
@@ -230,11 +260,13 @@ git add -A
 if ($LASTEXITCODE -ne 0) { Write-Host "git add failed" -ForegroundColor Red; exit 1 }
 
 Write-Host "Committing..." -ForegroundColor Cyan
-# Write commit message to a temp file so newlines survive PowerShell's
-# argument-parsing layer.
+# v0.4.6+: write the commit message with NO BOM. PS 5.1's `Set-Content -Encoding UTF8`
+# emits a UTF-8 BOM, which git then preserves verbatim â€” the result is commit
+# subjects that look like 'ï»¿GearGoblin 0.4.5' (invisible BOM prefix). The
+# explicit [System.Text.UTF8Encoding]::new($false) constructor disables BOM
+# emission and gives us clean ASCII/UTF-8 messages.
 $msgFile = [System.IO.Path]::GetTempFileName()
-$utf8 = New-Object System.Text.UTF8Encoding $false
-[System.IO.File]::WriteAllText($msgFile, $Message, $utf8)
+[System.IO.File]::WriteAllText($msgFile, $Message, [System.Text.UTF8Encoding]::new($false))
 git commit -F $msgFile
 $commitExit = $LASTEXITCODE
 Remove-Item $msgFile -Force
@@ -266,3 +298,54 @@ Write-Host ""
 Write-Host "==================================================" -ForegroundColor Green
 Write-Host "  Release complete: $projectName $tag" -ForegroundColor Green
 Write-Host "==================================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "⚠️  REMINDER: Do not leave Core and Web behind!" -ForegroundColor Yellow
+Write-Host "If this was a lockstep version bump, make sure to also bump and run release in:" -ForegroundColor Yellow
+Write-Host "  - GearGoblin.Core" -ForegroundColor Yellow
+Write-Host "  - TonberryTactics (Web)" -ForegroundColor Yellow
+Write-Host "==================================================" -ForegroundColor Green
+
+# ── Dropin artifact pruning (added 2026-05-20) ──────────────────────
+# Keep the last $Keep dropin zips + extracted folders in ~/Downloads
+# for rollback. Runs at end-of-script so a failed release leaves the
+# rollback artifacts untouched.
+
+function Invoke-DropinPrune {
+    [CmdletBinding()]
+    param(
+        [int]    $Keep         = 3,
+        [string] $DownloadsDir = "$env:USERPROFILE\Downloads",
+        [string] $Pattern      = "GearGoblin-v*-dropin"
+    )
+
+    Write-Host ""
+    Write-Host "── Dropin cleanup (keep last $Keep for rollback) ──" -ForegroundColor Cyan
+
+    $zips = @(Get-ChildItem -Path $DownloadsDir -Filter "$Pattern.zip" -File -ErrorAction SilentlyContinue |
+              Sort-Object LastWriteTime -Descending)
+    $dirs = @(Get-ChildItem -Path $DownloadsDir -Filter $Pattern -Directory -ErrorAction SilentlyContinue |
+              Sort-Object LastWriteTime -Descending)
+
+    if ($zips.Count -gt $Keep) {
+        foreach ($file in ($zips | Select-Object -Skip $Keep)) {
+            Write-Host "  Removing $($file.Name) ($($file.LastWriteTime.ToString('yyyy-MM-dd')))" -ForegroundColor DarkGray
+            Remove-Item $file.FullName -Force
+        }
+    }
+
+    if ($dirs.Count -gt $Keep) {
+        foreach ($dir in ($dirs | Select-Object -Skip $Keep)) {
+            Write-Host "  Removing $($dir.Name)/" -ForegroundColor DarkGray
+            Remove-Item $dir.FullName -Recurse -Force
+        }
+    }
+
+    $kept = $zips | Select-Object -First $Keep | ForEach-Object { $_.Name }
+    if ($kept) {
+        Write-Host "  Retained: $($kept -join ', ')" -ForegroundColor Green
+    } else {
+        Write-Host "  Nothing to retain (no dropins found)" -ForegroundColor DarkGray
+    }
+}
+
+Invoke-DropinPrune
