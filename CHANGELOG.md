@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.6.1] - 2026-08-14
+- **Lockstep Patch**: Version bump to sync with FFXIV Patch 2026.08.11.
+
+
+
 ## [1.6.0] - 2026-08-07
 
 ### Added
@@ -77,6 +82,11 @@
 - Replaced TonberryTactics' vendored \PureMathOptimizer\ with the consolidated \MeldOptimizer\ from \GearGoblin.Core\.
 - Core lift and math consolidation ensures that Web App and Plugin generate 100% identical recommendations, utilizing \JobPriorities\, \LevelTable\, and \MateriaCatalog\.
 # Changelog
+
+## [1.6.1] - 2026-08-14
+- **Lockstep Patch**: Version bump to sync with FFXIV Patch 2026.08.11.
+
+
 
 All notable changes to Tonberry Tactics are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning loosely
@@ -980,6 +990,7 @@ by GearGoblin's future `/goblinimport` command.
 
 [0.5.1]: https://github.com/LastOnionKnight/TonberryTactics/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LastOnionKnight/TonberryTactics/releases/tag/v0.5.0
+
 
 
 
