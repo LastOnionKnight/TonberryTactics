@@ -1,0 +1,474 @@
+# Changelog
+
+## [1.6.0] - 2026-08-07
+
+### Added
+- **DoH/DoL Support**: Added support for Crafter and Gatherer stats.
+- **Trinity Lockstep**: Bumped version to v1.6.0 to lockstep with the plugin and core.
+
+## [1.5.7c] - 2026-07-06
+
+### Fixed
+- **PSA Video**: Wired the TLF Home for Children thumbnail to properly embed and play the YouTube video on click.
+
+## [1.5.7b] - 2026-07-05
+
+### Changed
+- Version bump for trinity lockstep (plugin readability + FontAwesome chrome glyphs). No functional web changes.
+
+## [1.5.7] - 2026-07-05
+
+### Changed
+- Version bump for trinity lockstep. Incorporates Core submodule updates (adds `IconId` field to `MeldablePiece`). No functional web changes.
+
+## [1.5.2] - 2026-07-05
+
+### Fixed
+- **Cloudflare Pages deploy pipeline restored:** Resolved a `CS0104` type-name 
+  collision between `TonberryTactics.Models.ExportPayloadV2` and 
+  `GearGoblin.Core.ExportPayloadV2` in `Services/MeldOptimizerAdapter.cs`. This 
+  collision silently broke every web build since v1.5.0, leaving 
+  `tonberrytactics.pages.dev` stuck serving v1.4.0 for 11 days despite v1.5.0 
+  and v1.5.1 tags pushing to origin. Fixed by fully-qualifying the reference to 
+  `TonberryTactics.Models.ExportPayloadV2`. Root-cause resolution of the 
+  duplicate type is tracked as Architecture Debt for a follow-on release.
+- **Header pairing text refresh:** Updated stale `paired with plugin v0.6.0+` 
+  text to `paired with plugin v1.5.x`. The old string predates the Tonberry 
+  Tactics brand rename and the v1.x plugin era.
+
+### Changed
+- **Materia advisor sort order:** Recommendations now render in gear slot order 
+  (MainHand → Head → Body → Hands → Legs → Feet → Ears → Neck → Wrists → Rings) 
+  instead of raw job-priority order. Users can now scan advice piece-by-piece 
+  against their equipped gear rather than mentally re-sorting a priority list.
+
+## [1.2.0] - 2026-06-01
+
+### Fixed
+- **Web adapter regression (resolves v1.1.4 build failure):** Restored the
+  `WeightMode` argument that was improperly dropped from
+  `MeldOptimizerAdapter.Optimize(...)` in v1.1.4. `WeightMode` is a fully
+  supported Core feature (added v1.1.0) toggling between PureMath and
+  BalancePreset scoring. The v1.1.4 web tag was never deployed to production
+  due to this regression; v1.2.0 brings the web back into compilable state.
+
+### Changed
+- Scrubbed lingering documentation references to the retired `PureMathOptimizer`
+  in Core's `JobPriorities.cs`. Optimizer code itself was retired in v0.6.3.
+- Plugin `AssemblyVersion`, `FileVersion`, and `Version` synchronized to 1.2.0
+  (previously `AssemblyVersion` and `FileVersion` were stale at 1.1.2 due to
+  `release.ps1` only updating `<Version>`; logged as Architecture Debt).
+
+### Lockstep notes
+- Standalone `GearGoblin.Core` repo skipped v1.1.3 in its tag stream - the
+  v1.1.3 cap-math fix was applied via the submodule-vendored Core consumed
+  by plugin and web. v1.2.0 brings standalone Core back into trinity lockstep.
+- Web `CHANGELOG.md` previously skipped v1.1.3 (SuccessRate adapter parity
+  fix) and v1.1.4 (build-failure tag); see git history for those releases.
+
+## [1.1.2] - 2026-05-31
+### Changed
+- Pointed GearGoblin.Core to v1.1.2. Maintained lockstep version parity with plugin v1.1.2 and core v1.1.2.
+## [1.1.1] - 2026-05-31
+### Changed
+- Pointed GearGoblin.Core to v1.1.1. Maintained lockstep version parity with plugin v1.1.1 and core v1.1.1.
+## [1.1.0] - 2026-05-30
+### Changed
+- Replaced TonberryTactics' vendored \PureMathOptimizer\ with the consolidated \MeldOptimizer\ from \GearGoblin.Core\.
+- Core lift and math consolidation ensures that Web App and Plugin generate 100% identical recommendations, utilizing \JobPriorities\, \LevelTable\, and \MateriaCatalog\.
+# Changelog
+
+All notable changes to Tonberry Tactics are documented here. Format based on
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning loosely
+follows [Semantic Versioning](https://semver.org/).
+
+Tonberry Tactics is the web companion to the in-game plugin (formerly
+"GearGoblin", now also "Tonberry Tactics"). From v0.5.5 onward both halves
+ship at the same version number.
+
+## [0.6.5.4] — 2026-05-18  "H6 Lockstep"
+
+**Pairing:** GearGoblin plugin v0.6.5.4 + GearGoblin.Core v0.6.5.4.
+
+**Scope:** Version-only lockstep bump — no source changes to the web
+companion. In-page version strings (file header, version pill, derive
+badge, audit description, plugin-pair tag, footer wordmark,
+EmitterVersion/TtVersion constants) all bumped to 0.6.5.4. The v0.6.5.2
+EVERCOLD wordmark-external-link comment is preserved as historical.
+
+**Why this version exists:** The plugin's BUG-001 (Materia Advisor
+header ghost text) remains unfixed after three prior attempts. v0.6.5.4
+is the plugin's fourth swing — testing hypothesis H6 (the cloned label
+cell inherits the original ILVL row's text geometry, and our em-dashed
+"── Materia Advisor ──" label overflows the inherited cell width). The
+plugin also unifies its `/ttinfo` and header-pill version strings under
+a single `ResolveVersion()` resolver. Web travels along to keep the
+trinity in lockstep.
+
+**Versioning note:** Pure-numeric versioning going forward — the letter-
+suffix experiment (plugin v0.6.5.3a) is closed. Caused friction with
+release.ps1 and the github-actions repo.json bot.
+
+**Mobile site:** Slides from its originally-scoped v0.6.5.4 slot to
+v0.6.6. The v0.6.5.x patch stream has been consumed by BUG-001
+stabilization. Mobile work resumes after the panel bug is closed.
+
+---
+
+## [0.6.5.3] — 2026-05-16  "Collision Fix"
+
+**Headline:** Version-only lockstep bump. No functional changes to the
+web app.
+
+**Pairing with:** Plugin v0.6.5.3 ships the real fix for the
+character-panel ghost-text bug that v0.6.5.2 misdiagnosed. The fix
+adds an `expandCollisionNode` parameter to the plugin's
+`StatusPanelInjector.AddStatRow` (the upstream CharacterPanelRefined
+pattern we'd dropped during adaptation) and removes the v0.6.5.2
+pre-pad block that was making the bug worse. Same plugin release also
+lands four `/goblin` → `/tt` brand-convergence fixes the v0.5.x sweep
+missed in `StatusPanelInjector.cs`. Core (GearGoblin.Core v0.6.5.3)
+is also a version-only bump.
+
+### Web-side changes
+
+In-page version strings updated 0.6.5.2 → 0.6.5.3 across
+`Pages/Index.razor` (file header, version pill, derive badge, audit
+description, plugin-pair tag, footer wordmark, `EmitterVersion` /
+`TtVersion` constants — 9 sites total). The line-64 historical comment
+documenting when the EVERCOLD wordmark link landed correctly stays at
+v0.6.5.2.
+
+No CSS changes, no functional changes to the optimizer, audit, or
+gearset import. Cloudflare Pages auto-deploys this on git push.
+
+---
+
+## [0.6.5.2] — 2026-05-14  "Release Hardening"
+
+**No application-logic changes.** Release-infra patch + small UX
+polish to the header. Web is the component that needed the most
+hardening — its `release.ps1` was the only one of the three without
+a build gate, which is exactly why the v0.6.5.1 first attempt
+managed to ship a broken csproj (`AssemblyVersion=0.6.5.1.0`, 5
+components, fails CS7034) to GitHub before being force-pushed back.
+
+### Fixed
+
+- **`release.ps1`** — adds two steps that Core and Plugin already had
+  (or partially had):
+  1. **Sync with remote.** New step between branch detection and the
+     staging/status display. Runs `git fetch origin <branch>` followed
+     by `git pull --rebase --autostash origin <branch>`. Prevents the
+     non-fast-forward push rejection that hit Web on v0.6.5.1 second
+     attempt (after `git reset --hard HEAD~1` discarded the broken
+     `abc3ff6` locally, the corrected `0c1647c` couldn't push because
+     remote main was still at `abc3ff6` — required a manual
+     `git push --force-with-lease` to recover).
+  2. **Build gate.** New `dotnet build --configuration Release` step
+     between the status display and the commit-message generation.
+     Aborts the release on non-zero exit. Same pattern Core and Plugin
+     have had since v0.4.6. Bypassable with `-SkipBuild` for rare
+     fast-iteration cases. Adds `[switch]$SkipBuild` to the param block.
+
+### Changed
+
+- **`Pages/Index.razor` header** — the EVERCOLD wordmark is now an
+  external link to `https://na.finalfantasyxiv.com/evercold/`. The
+  `<img>` is wrapped in an `<a>` with `target="_blank"` and
+  `rel="noopener noreferrer"` (the standard external-link security
+  pattern: noopener prevents tabnabbing via `window.opener`, noreferrer
+  suppresses the Referer header). `aria-label` describes the link and
+  flags the new-tab behavior for screen readers.
+- **`wwwroot/css/design-v060.css`** — new `.expansion-link` rules.
+  Hover and `:focus-visible` states intensify the existing ice-cyan
+  drop-shadow on the wordmark (from `rgba(126,192,196,0.25)` →
+  `rgba(126,192,196,0.55)`), so the link affordance reads as part of
+  the visual identity rather than a generic browser hyperlink.
+  Keyboard focus also surfaces a 2px ice-cyan ring.
+
+### Pairing
+
+- **GearGoblin.Core v0.6.5.2** — same `git fetch + pull --rebase`
+  preamble added to its release.ps1 for workflow symmetry; lockstep
+  version bump.
+- **GearGoblin plugin v0.6.5.2** — same `git fetch + pull --rebase`
+  preamble added to its release.ps1 specifically to handle the
+  github-actions[bot] repo.json bumps that accumulate after every
+  tag push (the root cause of the v0.6.5.1 plugin push rejection).
+
+### Out of scope (deferred to v0.6.6+)
+
+- Lodestone integration (architecture decision pending: Cloudflare
+  Worker proxy vs XIVAPI/Tomestone third-party vs plugin-only path).
+- Character-panel advisor row offset (plugin-side fix for the
+  in-game ghost overlay; visible in Refia's Viper panel).
+- Plan tab `GG-PLAN:v1:` paste UI (plugin-side; web is already a
+  consumer of the same wire format).
+- Balance preset, stat-cap math, Akhmorning breakpoint formulas.
+
+---
+
+## [0.6.5.1] — 2026-05-14  "Audit reads right"
+
+**Hotfix.** Fixes an off-by-one in the v0.6.5 audit logic that
+flagged every Tier XII meld as under-tier and rendered them as "XI".
+
+**Root cause.** The plugin reads materia grade raw from FFXIV's
+`GameInventoryItem.MateriaGrade[i]`, which is 0-indexed: Tier I → 0,
+Tier XII → 11. The wire format passes this raw byte through unchanged.
+The plugin's *internal* `MateriaCatalog.MateriaTier` enum happens to
+be 1-indexed (`Tier12 = 12`), and the plugin's in-game audit converts
+via materia ID lookups rather than raw grade, so the bug doesn't
+manifest in-game (Image 6 from the pre-v0.6.5.1 screenshots correctly
+showed "Det XII (+54)").
+
+The web's vendored `MateriaTiers.CurrentCapTier = 12` (1-indexed) and
+the v0.6.5 audit compared `m.Grade < CurrentCapTier` directly against
+the raw 0-indexed wire value. Result: every Tier XII meld (Grade=11)
+satisfied `11 < 12` → flagged as under-tier, plus `RomanGrade(11)`
+rendered as "XI". A fully-melded gearset produced 20 phantom under-tier
+findings with a phantom "→ Upgrade to Tier XII (+54)" recommendation.
+
+### Fixed
+
+- **`Pages/Index.razor` `BuildAuditFindings()`** — introduced a local
+  `var displayGrade = m.Grade + 1;` at the top of the materia loop,
+  threaded through every comparison and display site:
+  - `if (displayGrade >= capTier)` for the overcap tally (was
+    `m.Grade >= capTier`).
+  - `bool underTier = displayGrade < capTier;` (was `m.Grade`).
+  - `RomanGrade(displayGrade)` in the under-tier headline (was
+    `RomanGrade(m.Grade)`).
+  - `RomanGrade(displayGrade)` in the `CurrentMateriaName` display
+    string (was `RomanGrade(m.Grade)`).
+  Wire format itself is unchanged — the `+1` lives at the consumer.
+  This is intentional: any tool reading existing GG-EXPORT:v1: strings
+  continues to work, and when v0.7.x lifts the optimizer into Core
+  it inherits the same 0-indexed convention.
+
+### Changed
+
+- **`TonberryTactics.csproj`** — version `0.6.5 → 0.6.5.1`, Description
+  rewritten for "Audit reads right".
+- **All in-page version strings** — bumped header badge, footer copy,
+  audit panel badges, `EmitterVersion`/`TtVersion` constants, audit
+  footer note "Audit logic mirrors plugin's MeldAudit format" from
+  v0.6.5 → v0.6.5.1.
+
+### Pairing
+
+- **GearGoblin.Core v0.6.5.1** — lockstep version bump only.
+- **GearGoblin plugin v0.6.5.1** — "Quiet Info". Hotfix for the
+  `/ttinfo` hard-crash that surfaced after v0.6.5 shipped.
+
+### What still doesn't work (v0.6.6+)
+
+- Balance preset (toggle exists; both modes fall through to Pure-Math).
+- In-game `GG-PLAN:v1:` paste UI (plugin v0.6.6).
+- Stat-cap math, Akhmorning breakpoint formulas (v0.8.x).
+
+---
+
+## [0.6.5] — 2026-05-14  "Audit lit up"
+
+**Headline:** The Meld Audit panel rows for **Wrong stat**,
+**Under-tier**, and **Overcap** were placeholder stubs through v0.6.4
+— they always rendered `—` with italic "ships next release"
+captions. v0.6.5 wires all three to real logic against the
+`GearGoblin.Core.JobPriorities` per-job tables and
+`GearGoblin.Core.MateriaTiers.CurrentCapTier`. Adds a fourth
+**Sell / replace** verdict row with a click-to-expand per-materia
+breakdown showing piece, slot, current materia, headline, and
+recommended action.
+
+The audit output format deliberately mirrors the plugin's
+`MeldAudit` record (in `GearGoblin/Materia/MeldOptimizer.cs`, lines
+24–67). Both halves now produce the same shape — `Piece`,
+`SlotIndex`, `CurrentMateriaName`, `Headline`, `Detail` — so when
+v0.7.x lifts the optimizer into Core as a shared service, the web
+UI doesn't need to change. Only the source of the audit data does.
+
+Also syncs the vendored `Services/Core/MateriaTiers.cs` to match
+the Core v0.6.4 content where Skill Speed materia prefix was
+corrected from "Piety" to "Quickarm". Pre-v0.6.5 web read Tier
+display strings from the vendored copy that still had the v0.6.3
+"Piety" stub.
+
+### Added
+
+- **Sell / replace audit row** — fourth row in the audit panel,
+  with separator line above. Shows count of materia recommended to
+  extract & replace. When count > 0, a "show breakdown" toggle
+  reveals a per-materia list with piece+slot, current materia
+  (e.g. "Determination XII (+54)"), headline (e.g. "Determination
+  not in DRG priority"), and recommended action (e.g. "→ Replace
+  with priority stat (CRT › DH › DET)").
+- **Wrong stat detection** — iterates equipped pieces' melded
+  materia, canonicalizes stat names via `StatNames.Canonical`, and
+  flags any whose canonical name isn't in
+  `JobPriorities.For(jobAbbr)`. Output: count, plus per-materia
+  finding with "stat not in {JOB} priority" headline.
+- **Under-tier detection** — flags any melded materia whose
+  `Grade < MateriaTiers.CurrentCapTier` (currently XII at Lv 100).
+  Output: count, plus per-materia finding with "Tier {grade} below
+  cap (XII)" headline.
+- **Overcap heuristic** — counts Tier XII melds per stat per piece;
+  flags pieces with 3+ same-stat Tier XII as likely overcapping
+  (per-piece cap is typically ~150, two Tier XII = 108 legit, three
+  overcaps). Output: piece count, plus per-piece finding with
+  "Likely overcap on this piece" headline.
+- **`BuildAuditFindings()` + caching** — single pass over the
+  payload produces all findings; downstream counts and breakdown
+  toggle reuse the cached list, invalidated by
+  `ReferenceEquals(ParsedPayload)` change.
+- **`AuditFinding` private record** — internal shape that mirrors
+  plugin's `MeldAudit` field-for-field where applicable.
+
+### Fixed
+
+- **Materia tier display: Skill Speed prefix** — `Services/Core/MateriaTiers.cs`
+  synced to Core v0.6.4 content. Previously read "Piety Materia XII"
+  for Skill Speed materia because the vendored copy still had the
+  v0.6.3 typo. Now correctly reads "Quickarm Materia XII".
+
+### Changed
+
+- **Audit panel footer note** — "Full audit logic lives in the
+  plugin; web parity ships v0.6.1" → "Audit logic mirrors plugin's
+  MeldAudit format (v0.6.5)".
+- **`TonberryTactics.csproj`** — version `0.6.4 → 0.6.5`,
+  Description rewritten for "Audit lit up".
+- **All in-page version strings** — bumped header badge, footer
+  copy, audit panel badges, `EmitterVersion`/`TtVersion` constants
+  from 0.6.4 → 0.6.5.
+
+### Pairing
+
+- **GearGoblin.Core v0.6.5** — lockstep bump only.
+- **GearGoblin plugin v0.6.5** — "Crafted Visible". Critical
+  HQ-offset `InventoryReader` fix. Without that, the web continues
+  to receive 3-of-13 piece exports and the new audit logic has
+  almost nothing to analyze.
+
+### What still doesn't work (v0.6.6+)
+
+- **Balance preset.** Toggle exists in UI; both modes currently
+  fall through to Pure-Math. Plugin's `MeldOptimizer` already
+  implements Balance-preset opinions via `JobProfile`; web parity
+  ships when Balance moves into Core (v0.7.x).
+- **No in-game surface for the round-trip plan.** Plan tab in the
+  plugin accepts Etro/XIVGear URLs only — there's no paste box for
+  the `GG-PLAN:v1:` string that this site emits. (v0.6.6 scope.)
+- **Stat-cap math + breakpoint suggestions.** Display only; no
+  Akhmorning formulas. (v0.8.x.)
+
+---
+
+## [0.6.4] — 2026-05-14  "Vendored Lockstep"
+
+**Headline:** The Materia Advisor finally produces real per-job
+recommendations, _and the build actually deploys this time_. v0.6.3
+shipped the right code with the wrong delivery mechanism (a
+`<ProjectReference>` to a sibling Core repo that doesn't exist in
+Cloudflare Pages CI); that deployment failed and was reverted.
+v0.6.4 vendors the three Core files (`StatNames`, `MateriaTiers`,
+`JobPriorities`) into `Services/Core/` with their original
+`GearGoblin.Core` namespace intact. Web builds self-contained;
+plugin keeps its real ProjectReference unchanged; both halves agree
+on namespaces and signatures.
+
+This restores three-way lockstep (Core / web / plugin all at v0.6.4)
+without taking the architectural shortcut that broke CI in v0.6.3.
+
+### Added
+
+- **`Services/Core/StatNames.cs`** — vendored mirror of
+  `GearGoblin.Core/StatNames.cs` v0.6.3. Canonicalize FFXIV substat
+  names ("Critical Hit" / "CRT" / "Critical" → `CRT`). Used by the
+  Materia Advisor for stat-dot styling and stat-totals bucketing.
+- **`Services/Core/MateriaTiers.cs`** — vendored mirror of
+  `GearGoblin.Core/MateriaTiers.cs` v0.6.3. Tier-to-stat-value lookup
+  (Tier XII → +54) and materia-name composition (`Savage Aim Materia XII`).
+  Inherits the known Skill Speed prefix stub (`"Piety"` instead of
+  `"Quickarm"`) from Core; cosmetic-only, tracked for next sync.
+- **`Services/Core/JobPriorities.cs`** — vendored mirror of
+  `GearGoblin.Core/JobPriorities.cs` v0.6.3. Per-job materia priority
+  tables for all 21 combat jobs (plus BLU). Tank / Healer / Melee DPS
+  / Phys Ranged / Mage baselines sourced from public guides at
+  thebalanceffxiv.com (patch 7.x Dawntrail tier).
+- **`Services/Core/VENDORED.md`** — sync-workflow doc. When Core ships
+  a new version, copy these three files over and bump web's version
+  in lockstep.
+
+### Changed
+
+- **`Services/PureMathOptimizer.cs` — rewrite.** Now reads its priority
+  list from `GearGoblin.Core.JobPriorities.For(jobAbbr)` rather than
+  the hardcoded `GnbPriority` array. Materia name + stat value resolve
+  via `Core.MateriaTiers.NameOf()` and `Core.MateriaTiers.SubstatValue()`
+  so both halves agree on what "Tier XII" means. Mode label now reads
+  `"AST priority (via Core)"` on table hit, `"<JOB> fallback (no Core
+  table)"` on miss — instead of always-GNB.
+- **`Pages/Index.razor` — Materia Advisor mode badge.** The
+  apologetic "falling back to GNB priorities (per-job optimizer ships
+  v0.6.1 Core)" text is gone. Tabled jobs see "real <JOB> priority
+  from thebalanceffxiv.com"; un-tabled jobs see "falling back to GNB
+  tank baseline (Core has no table for XYZ)" — honest in the rare
+  case rather than the common case.
+- **`Pages/Index.razor` — stat name matching.** `MateriaStatClass`
+  and `BuildStatCells` now route through a new private
+  `CanonicalStatKey` forwarder to `GearGoblin.Core.StatNames.Canonical`,
+  so plugin-emitted "Critical Hit" / "Direct Hit Rate" / etc. match
+  into the right stat bucket. Pre-v0.6.4 these matched on uppercased
+  three-letter codes only, which is why all stat totals showed `+0`
+  for any payload that came from the plugin emitter.
+- **`Pages/Index.razor` — Meld Audit panel.** The "Per-job priority
+  detection ships v0.6.1" placeholder updated to "Per-job priority
+  via GearGoblin.Core (v0.6.4)" now that the feature actually exists.
+- **`EmitterVersion` and `TtVersion` constants** bumped `0.6.0 → 0.6.4`.
+  Version pill and footer copy bumped accordingly.
+- **`TonberryTactics.csproj`** — version `0.6.0 → 0.6.4`, Description
+  rewritten for "Vendored Lockstep", **no ProjectReference**
+  (vendored Core is in-tree).
+
+### Pairing
+
+Ships in lockstep with:
+
+- **GearGoblin.Core v0.6.4** — content unchanged from v0.6.3 in
+  practice (these three files are byte-identical to Core's v0.6.3
+  vendored copies); version bump exists to keep lockstep with web
+  and plugin.
+- **GearGoblin plugin v0.6.4** — keeps its real `<ProjectReference>`
+  to Core. Plugin's existing `MeldOptimizer` (already job-aware via
+  `JobProfile`) continues to work unchanged; consuming Core's priority
+  tables from the plugin side is an incremental migration tracked for
+  v0.7.x alongside CPR-replacement work.
+
+### Verify after deploy
+
+1. Open https://tonberrytactics.pages.dev. Hard refresh (Ctrl+Shift+R)
+   to bust any stale cached chrome.
+2. Version pill in the top-right of the layout reads **v 0.6.4**.
+   Footer reads `TONBERRY TACTICS · v0.6.4 · CLOUDFLARE PAGES`.
+3. Paste your AST export. Materia Advisor badge should read
+   "real AST priority from thebalanceffxiv.com" (cyan), not
+   "falling back to GNB priorities" (amber).
+4. If your AST has empty meld slots, the recommended fills should
+   reflect healer priority (Crit → DH → DET → SPS → PIE) rather than
+   tank (Crit → DH → DET → SKS → TEN).
+5. Stat Profile panel should show non-zero numbers in Crit / DH / DET
+   / etc. — previously these were all `+0` for plugin payloads because
+   the matching was three-letter-codes-only.
+
+### Notes
+
+- v0.6.3 reverted as commit `86beba2`. v0.6.4 starts from the post-revert
+  state and re-applies the v0.6.3 feature surface via the vendoring
+  approach.
+- v0.7.x will switch from manual vendoring to a git submodule of
+  `LastOnionKnight/GearGoblin-Core`. That's the architecturally proper
+  fix; this approach is the pragmatic v0.6.x bridge.
+
+---

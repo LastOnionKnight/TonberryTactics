@@ -1,3 +1,5 @@
+# Changelog
+
 ## [1.6.0] - 2026-08-07
 
 ### Added
@@ -978,6 +980,7 @@ by GearGoblin's future `/goblinimport` command.
 
 [0.5.1]: https://github.com/LastOnionKnight/TonberryTactics/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LastOnionKnight/TonberryTactics/releases/tag/v0.5.0
+
 
 
 
