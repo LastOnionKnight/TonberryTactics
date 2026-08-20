@@ -425,7 +425,6 @@
 </footer>
 
 <script>
-  // ── HERO: live close-the-gap demo ─────────────────────────────────────────
   var HERO = [
     { label:'Critical Hit', value:2410, cap:2780, proj:2680 },
     { label:'Direct Hit',   value:1180, cap:2780, proj:1456 }
@@ -551,13 +550,23 @@
             ? GearGoblin.Core.Materia.WeightMode.BalancePreset
             : GearGoblin.Core.Materia.WeightMode.PureMath;
 
-        Optimization = MeldOptimizerAdapter.Optimize(
-            ParsedPayload,
-            weightMode,
-            JobIdForAbbr(ActiveJobOverride));
+        var effectivePayload = ParsedPayload;
+        var overrideJobId = JobIdForAbbr(ActiveJobOverride);
+        if (overrideJobId is uint jobId && !string.IsNullOrWhiteSpace(ActiveJobOverride))
+        {
+            effectivePayload = ParsedPayload with
+            {
+                Character = ParsedPayload.Character with
+                {
+                    Job = jobId,
+                    JobAbbreviation = ActiveJobOverride!
+                }
+            };
+        }
 
+        Optimization = MeldOptimizerAdapter.Optimize(effectivePayload, weightMode);
         GeneratedImportString = PlanSerializer.Serialize(
-            Optimization, ParsedPayload, EmitterVersion);
+            Optimization, effectivePayload, EmitterVersion);
 
         Portrait = PortraitState.Combat;
     }
