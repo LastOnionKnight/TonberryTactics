@@ -19,7 +19,7 @@
     <span class="tagline">"No gear. No hope. No pants. Just onions."</span>
     <div class="subbar-meta">
       <span class="chip gold">v 1.6.1</span>
-      <span class="sub-plugin">paired with plugin v1.5.x</span>
+      <span class="sub-plugin">paired with plugin v1.6.1</span>
       <span class="sub-div">TLF · Gear Division</span>
       <span class="patch-pill">◆ Evercold · Patch 7.55</span>
       <button class="btn ghost" onclick="window.setTheme(window.getTheme() === 'dark' ? 'light' : 'dark')" title="Toggle Theme" style="padding:4px 8px; border:1px solid var(--line); border-radius:4px; background:var(--sink); cursor:pointer;">
@@ -58,9 +58,9 @@
   <section class="panel export-bar" id="exportTop">
     <div class="panel-hd"><span class="title">Adventurer</span><span class="chip">/ttexport → audit</span></div>
     <div class="panel-bd">
-      <p class="export-lead"><span class="italic">Step forward.</span> Paste the <span class="tok">GG-EXPORT:v1:</span> string from <span class="cmd">/ttexport</span> to begin the audit.</p>
+      <p class="export-lead"><span class="italic">Step forward.</span> Paste the current <span class="tok">GG-EXPORT:v2:</span> string from <span class="cmd">/ttexport</span> to begin the audit. v1 exports remain accepted for compatibility.</p>
       <div class="export-row">
-        <textarea id="exportInput" placeholder="GG-EXPORT:v1:eyJwbHVnaW4iOiJUb25iZXJyeVRhY3RpY3MiLi4u" @bind="ExportString" @bind:event="oninput"></textarea>
+        <textarea id="exportInput" placeholder="GG-EXPORT:v2:eyJwbHVnaW4iOiJHZWFyR29ibGluIi4uLg==" @bind="ExportString" @bind:event="oninput"></textarea>
         <button class="step-forward" id="stepBtn" @onclick="RunOptimization">
           ▶ Step Forward
           <small>— star once, star true —</small>
@@ -202,10 +202,10 @@
               }
               else
               {
-                  <div class="empty-state">Real caps require a v2 export from GearGoblin 0.6.0+.</div>
+                  <div class="empty-state">Real stat-cap data requires a GG-EXPORT:v2 payload from /ttexport.</div>
               }
           </div>
-          <div class="stat-note"><span class="dot">●</span> <span>Materia totals from <strong>/ttexport</strong>. Derivation rows + breakpoint markers ship in v0.6.1 (Akhmorning formulas).</span></div>
+          <div class="stat-note"><span class="dot">●</span> <span>Materia totals come from <strong>/ttexport</strong>. Optimization and audit logic use the shared GearGoblin.Core formulas and job profiles.</span></div>
         </div>
       </section>
 
@@ -244,7 +244,7 @@
       </section>
 
       <section class="panel">
-        <div class="panel-hd"><span class="title">Meld Audit</span><span class="chip">MeldAudit · v0.6.6.0</span></div>
+        <div class="panel-hd"><span class="title">Meld Audit</span><span class="chip">MeldAudit · Core 1.6.1</span></div>
         <div class="panel-bd">
           <div class="audit-grid">
             <div class="audit-row @AuditPipClass(AuditEmptyCount())"><span class="sev"></span><span class="a-name">Empty slots</span><span class="a-val">@(ParsedPayload != null ? AuditEmptyCount() : "—")</span></div>
@@ -295,17 +295,17 @@
         <div class="panel-bd">
           <div class="job-label">Mode</div>
           <div class="mode-toggle" id="modeToggle">
-            <button class="@(OptimizerMode == "Pure-Math" ? "active" : "")" @onclick='() => OptimizerMode = "Pure-Math"'>Pure Math</button>
-            <button class="@(OptimizerMode == "Balance" ? "active" : "")" @onclick='() => OptimizerMode = "Balance"'>Balance</button>
+            <button class="@(OptimizerMode == "Pure-Math" ? "active" : "")" @onclick='() => SetOptimizerMode("Pure-Math")'>Pure Math</button>
+            <button class="@(OptimizerMode == "Balance" ? "active" : "")" @onclick='() => SetOptimizerMode("Balance")'>Balance</button>
           </div>
           <p class="mode-desc" id="modeDesc">
               @if (OptimizerMode == "Pure-Math")
               {
-                  <text><b>Greedy per-stat priority</b> — fast, naive, ships today.</text>
+                  <text><b>Uniform marginal-value scoring</b> — ranks relevant stats by formula-derived gain.</text>
               }
               else
               {
-                  <text><b>Balance consensus weights</b> — queued for v0.6.1+.</text>
+                  <text><b>Community-weighted scoring</b> — applies the selected job profile's Balance preset weights.</text>
               }
           </p>
           <div class="job-label">Job profile</div>
@@ -315,7 +315,7 @@
                   var jobColor = JobColors.TryGetValue(abbr, out var c) ? c : "#8a93a0";
                   <button class="job @role @(ActiveJob() == abbr ? "active" : "")" 
                           style="--jc: @jobColor"
-                          @onclick="@(() => ActiveJobOverride = abbr)">
+                          @onclick="@(() => SelectJob(abbr))">
                       <img class="jobstone" src="assets/jobs/@(abbr).png" alt="@abbr" />
                       <span class="job-abbr">@abbr</span>
                   </button>
@@ -420,7 +420,7 @@
     </div>
     <img src="assets/tt-lantern-mark.svg" alt="TLF Emblem" class="foot-emblem" />
     <div class="foot-credo">◆ <img src="assets/tt-lantern-mark.svg" class="fc-mark" alt="mark"/> The Onion Knight stands ready <img src="assets/tt-lantern-mark.svg" class="fc-mark" alt="mark"/> ◆</div>
-    <div class="foot-meta">Tonberry Tactics · v1.5.8 · Cloudflare Pages · No gear · No hope · Just onions</div>
+    <div class="foot-meta">Tonberry Tactics · v1.6.1 · Cloudflare Pages · No gear · No hope · Just onions</div>
   </div>
 </footer>
 
@@ -449,8 +449,7 @@
       host.appendChild(g);
     });
   }
-  // Click-to-play the TLF PSA video: keep the custom thumbnail until the user
-  // clicks, then swap in the real YouTube player (nocookie + autoplay on gesture).
+
   function playPsaVideo(){
     var box=document.getElementById('psaVideo');
     if(!box || box.dataset.playing==='1') return;
@@ -465,6 +464,7 @@
     box.innerHTML='';
     box.appendChild(f);
   }
+
   function playHero(){
     var host=document.getElementById('heroGauges'); if(!host) return;
     var fills=host.querySelectorAll('.hg-fill'), projs=host.querySelectorAll('.hg-proj');
@@ -483,48 +483,33 @@
       setTimeout(function(){ projs.forEach(function(p){ p.style.width=p.dataset.fill+'%'; }); host.classList.add('show-proj'); }, 1750);
     });
   }
+
   function loadSample() {
-      // Basic stub for the sample loader JS trigger; in Blazor this would update state,
-      // but for now we just populate the textarea and click the step button
       document.getElementById('exportInput').value = 'GG-EXPORT:v2:eyJWIjoyLCJqb2IiOiJHTkIiLCJsdmwiOjEwMCwiaWx2bCI6NzM1LCJ0b3RhbHMiOlt7IlN0YXQiOiJDcml0aWNhbCBIaXQiLCJWYWx1ZSI6MjY0MCwiQ2FwIjoyNzgwfSx7IlN0YXQiOiJEaXJlY3QgSGl0IiwiVmFsdWUiOjEzMzAsIkNhcCI6Mjc4MH0seyJTdGF0IjoiRGV0ZXJtaW5hdGlvbiIsIlZhbHVlIjoxOTEwLCJDYXAiOm51bGx9LHsiU3RhdCI6IlRlbmFjaXR5IiwiVmFsdWUiOjEyMDUsIkNhcCI6Mjc4MH0seyJTdGF0IjoiU2tpbGwgU3BlZWQiLCJWYWx1ZSI6MjkwMCwiQ2FwIjoyNzgwfSx7IlN0YXQiOiJQaWV0eSIsIlZhbHVlIjo0NDAsIkNhcCI6bnVsbH1dLCJlcXVpcHBlZCI6W3siU2xvdCI6Ik1haW5IYW5kIiwiSWQiOjQxMDgzLCJJdGVtTGV2ZWwiOjczNSwiTmFtZSI6IkF1Z3N0ZWR0ciIsIk1hdGVyaWEiOlt7IlNsb3RJbmRleCI6MCwiR3JhZGUiOjExLCJTdGF0TmFtZSI6IkNyaXRpY2FsIEhpdCIsIlN0YXRWYWx1ZSI6NTR9LHsiU2xvdEluZGV4IjoxLCJHcmFkZSI6MTEsIlN0YXROYW1lIjoiQ3JpdGljYWwgSGl0IiwiU3RhdFZhbHVlIjo1NH1dfV19';
       var evt = new Event('input', { bubbles: true });
       document.getElementById('exportInput').dispatchEvent(evt);
       setTimeout(function() { document.getElementById('stepBtn').click(); }, 50);
   }
-  
-  // init hero
+
   setTimeout(function() {
       buildHero(); playHero();
   }, 100);
 </script>
 
-
 @code {
-    // ═════════════════════════════════════════════════════════════════
-    //  CONSTANTS — version-locked with the plugin (v0.5.5 alignment)
-    // ═════════════════════════════════════════════════════════════════
-    // v1.5.8 — these strings drifted from 1.5.2 through 1.5.7c because the
-    // lockstep "version-only web bump" only touched csproj + CHANGELOG (gap
-    // diagnostic item 4). Until the display derives from InformationalVersion,
-    // bumping them is part of the VERSIONING.md web-bump checklist.
     private const string EmitterVersion = "1.6.1";
     private const string TtVersion      = "1.6.1";
 
-    // ═════════════════════════════════════════════════════════════════
-    //  INPUT / OUTPUT + PIPELINE STATE
-    // ═════════════════════════════════════════════════════════════════
     private string ExportString          = "";
     private string GeneratedImportString = "";
 
-    private ExportPayloadV2? ParsedPayload { get; set; }   private OptimizerResult? Optimization;
-    private string?                   ParseError;
+    private ExportPayloadV2? ParsedPayload { get; set; }
+    private OptimizerResult? Optimization;
+    private string? ParseError;
 
     private string OptimizerMode = "Pure-Math";
     private string? ActiveJobOverride;
 
-    // ═════════════════════════════════════════════════════════════════
-    //  PORTRAIT STATE MACHINE — maps to design's pipeline state-tag
-    // ═════════════════════════════════════════════════════════════════
     private enum PortraitState { Ready, Combat, Danger }
     private PortraitState Portrait = PortraitState.Ready;
 
@@ -534,6 +519,7 @@
         PortraitState.Danger => "WARNING",
         _                    => "AWAITING",
     };
+
     private string PipelineTagClass() => Portrait switch
     {
         PortraitState.Combat => "engaged",
@@ -541,9 +527,6 @@
         _                    => "",
     };
 
-    // ═════════════════════════════════════════════════════════════════
-    //  OPTIMIZER PIPELINE — unchanged from v0.5.5
-    // ═════════════════════════════════════════════════════════════════
     private void RunOptimization()
     {
         if (string.IsNullOrWhiteSpace(ExportString)) return;
@@ -552,6 +535,8 @@
         Optimization          = null;
         ParseError            = null;
         GeneratedImportString = "";
+        cachedFindings        = null;
+        findingsBoundTo       = null;
 
         var parseResult = GearsetParser.TryParse(ExportString);
         if (!parseResult.Success || parseResult.Payload is null)
@@ -562,12 +547,35 @@
         }
         ParsedPayload = parseResult.Payload;
 
-        Optimization = MeldOptimizerAdapter.Optimize(ParsedPayload);
+        var weightMode = OptimizerMode == "Balance"
+            ? GearGoblin.Core.Materia.WeightMode.BalancePreset
+            : GearGoblin.Core.Materia.WeightMode.PureMath;
+
+        Optimization = MeldOptimizerAdapter.Optimize(
+            ParsedPayload,
+            weightMode,
+            JobIdForAbbr(ActiveJobOverride));
 
         GeneratedImportString = PlanSerializer.Serialize(
             Optimization, ParsedPayload, EmitterVersion);
 
         Portrait = PortraitState.Combat;
+    }
+
+    private void SetOptimizerMode(string mode)
+    {
+        OptimizerMode = mode;
+        if (ParsedPayload != null)
+            RunOptimization();
+    }
+
+    private void SelectJob(string abbr)
+    {
+        ActiveJobOverride = abbr;
+        cachedFindings = null;
+        findingsBoundTo = null;
+        if (ParsedPayload != null)
+            RunOptimization();
     }
 
     private void ClearPlan()
@@ -578,6 +586,8 @@
         GeneratedImportString = "";
         ExportString          = "";
         ActiveJobOverride     = null;
+        cachedFindings        = null;
+        findingsBoundTo       = null;
         Portrait              = PortraitState.Ready;
     }
 
@@ -589,12 +599,9 @@
             await JS.InvokeVoidAsync(
                 "navigator.clipboard.writeText", GeneratedImportString);
         }
-        catch { /* readonly textarea allows manual copy */ }
+        catch { }
     }
 
-    // ═════════════════════════════════════════════════════════════════
-    //  ADVENTURER CARD HELPERS
-    // ═════════════════════════════════════════════════════════════════
     private string AdvDisplayName() =>
         ParsedPayload?.Character is { } c
             ? $"{c.JobAbbreviation} · Lv {c.Level}"
@@ -606,9 +613,6 @@
     private string AdvLevel()   => ParsedPayload?.Character?.Level.ToString() ?? "—";
     private string AdvIlvl()    => ParsedPayload?.Character?.AverageItemLevel.ToString() ?? "—";
 
-    // ═════════════════════════════════════════════════════════════════
-    //  GEAR GRID HELPERS — slot-icon glyphs + materia stat classes
-    // ═════════════════════════════════════════════════════════════════
     private string SlotGlyph(string slot) => slot.ToLower() switch
     {
         "mainhand"            => "⚔",
@@ -627,23 +631,16 @@
 
     private string MateriaStatClass(string statName) => CanonicalStatKey(statName) switch
     {
-        "CRT"  => "crit",
-        "DH"   => "dh",
-        "DET"  => "det",
-        "SKS"  => "sks",
-        "SPS"  => "sps",
-        "TEN"  => "ten",
-        "PIE"  => "pie",
-        _      => "",
+        "CRT" => "crit",
+        "DH"  => "dh",
+        "DET" => "det",
+        "SKS" => "sks",
+        "SPS" => "sps",
+        "TEN" => "ten",
+        "PIE" => "pie",
+        _     => "",
     };
 
-    // v0.6.4 — Canonicalize stat name. Forwards to Core's shared
-    // StatNames.Canonical helper (vendored at Services/Core/StatNames.cs)
-    // so the plugin and web can't drift on the matching rules. The
-    // plugin emits in-game BaseParam display names ("Critical Hit",
-    // "Direct Hit Rate") and older payloads use three-letter codes
-    // ("CRT", "DH"); both flow through this helper to a canonical
-    // three-letter key the UI's switches match against.
     private static string CanonicalStatKey(string? statName) =>
         GearGoblin.Core.StatNames.Canonical(statName);
 
@@ -656,9 +653,6 @@
     private int TotalMateriaCount() =>
         ParsedPayload?.Equipped?.Sum(p => p.Materia?.Count ?? 0) ?? 0;
 
-    // ═════════════════════════════════════════════════════════════════
-    //  STAT PROFILE HELPERS — materia totals (full derivations v0.6.1)
-    // ═════════════════════════════════════════════════════════════════
     private record StatCell(string Name, string Value, int MateriaTotal, double PercentOfCap);
 
     private List<StatCell> BuildStatCells()
@@ -697,9 +691,6 @@
         ? $"Lv {c.Level} {c.JobAbbreviation} · materia totals only"
         : "awaiting import";
 
-    // ═════════════════════════════════════════════════════════════════
-    //  AUDIT HELPERS
-    // ═════════════════════════════════════════════════════════════════
     private int AuditEmptyCount() => Optimization?.PlanRecommendations.Count ?? 0;
 
     private string AuditPipClass(int count)
@@ -708,16 +699,8 @@
         return count > 4 ? "error" : count > 0 ? "warn" : "ok";
     }
 
-    private string JobAbbr() => ParsedPayload?.Character?.JobAbbreviation ?? "?";
+    private string JobAbbr() => ActiveJob();
 
-    // v0.6.5 — Real audit logic. Output shape deliberately mirrors the
-    // plugin's MeldAudit record (Piece / PieceName / SlotIndex /
-    // CurrentMateriaName / Severity / Headline / Detail) so a future
-    // consolidation into GearGoblin.Core can swap the source without
-    // changing the UI. Pure-Math severity levels:
-    //   - Wrong stat → Warning (stat outside active job's priority list)
-    //   - Under-tier → Minor   (grade < CurrentCapTier)
-    //   - Overcap    → Warning (piece has 2+ Tier XII melds on same stat)
     private sealed record AuditFinding(
         string Piece,
         int    SlotIndex,
@@ -729,7 +712,7 @@
         bool   IsOvercap);
 
     private List<AuditFinding>? cachedFindings;
-    private ExportPayloadV2?    findingsBoundTo;
+    private ExportPayloadV2? findingsBoundTo;
 
     private List<AuditFinding> BuildAuditFindings()
     {
@@ -738,15 +721,10 @@
             return cachedFindings;
 
         var findings = new List<AuditFinding>();
-        var jobAbbr  = ParsedPayload.Character?.JobAbbreviation ?? "";
+        var jobAbbr  = ActiveJob();
         var priority = GearGoblin.Core.JobPriorities.For(jobAbbr);
         var capTier  = GearGoblin.Core.MateriaTiers.CurrentCapTier;
 
-        // Build the set of canonical priority keys for the active job
-        // (for the wrong-stat check). Take all entries — Pure-Math
-        // recommends across the full priority list, so a stat being
-        // outside the list is what makes it "wrong" rather than just
-        // "suboptimal".
         var priorityKeys = new HashSet<string>(
             priority.Select(GearGoblin.Core.StatNames.Canonical),
             StringComparer.Ordinal);
@@ -755,7 +733,6 @@
         {
             if (piece.Materia is not { Count: > 0 }) continue;
 
-            // Overcap check logic (using exact SubstatCap and BaseSubstats)
             foreach (var m in piece.Materia)
             {
                 var displayGrade = m.Grade + 1;
@@ -770,9 +747,6 @@
                         ? $"{m.StatName} not in {jobAbbr} priority"
                         : $"Tier {RomanGrade(displayGrade)} below cap (XII)";
 
-                    // v1.5.8 — the +N in the under-tier hint is the BATTLE
-                    // materia value table; DoH/DoL materia carry different
-                    // values, so their hint omits the number.
                     var detail = wrongStat
                         ? $"→ Replace with priority stat ({string.Join(" › ", priority.Take(3))})"
                         : GearGoblin.Core.StatNames.IsCraftGather(canonical)
@@ -790,7 +764,7 @@
                         IsOvercap:          false));
                 }
             }
-            // Check exact overcap per stat using the unified GearGoblin.Core structure
+
             var baseStats = new Dictionary<GearGoblin.Core.Materia.Substat, int>();
             if (piece.BaseSubstats != null)
             {
@@ -800,35 +774,21 @@
                         baseStats[s] = kvp.Value;
                 }
             }
-            
+
             var currentMeldStats = new Dictionary<GearGoblin.Core.Materia.Substat, int>();
             foreach (var m in piece.Materia)
             {
-                if (Enum.TryParse<GearGoblin.Core.Materia.Substat>(m.StatName, out var s))
-                {
-                    currentMeldStats.TryGetValue(s, out var v);
-                    currentMeldStats[s] = v + m.StatValue;
-                }
+                var stat = GearGoblin.Core.Materia.MateriaCatalog.StatNameToSubstat(m.StatName);
+                if (stat == GearGoblin.Core.Materia.Substat.None)
+                    continue;
+
+                currentMeldStats.TryGetValue(stat, out var value);
+                currentMeldStats[stat] = value + m.StatValue;
             }
 
             var meldablePiece = new GearGoblin.Core.Materia.MeldablePiece
             {
-                Slot = piece.Slot switch
-                {
-                    "Head" => GearGoblin.Core.EquipSlot.Head,
-                    "Body" => GearGoblin.Core.EquipSlot.Body,
-                    "Hands" => GearGoblin.Core.EquipSlot.Hands,
-                    "Legs" => GearGoblin.Core.EquipSlot.Legs,
-                    "Feet" => GearGoblin.Core.EquipSlot.Feet,
-                    "Ears" => GearGoblin.Core.EquipSlot.Earring,
-                    "Neck" => GearGoblin.Core.EquipSlot.Necklace,
-                    "Wrists" => GearGoblin.Core.EquipSlot.Bracelet,
-                    "FingerL" => GearGoblin.Core.EquipSlot.RingLeft,
-                    "FingerR" => GearGoblin.Core.EquipSlot.RingRight,
-                    "MainHand" => GearGoblin.Core.EquipSlot.MainHand,
-                    "OffHand" => GearGoblin.Core.EquipSlot.OffHand,
-                    _ => GearGoblin.Core.EquipSlot.Unknown
-                },
+                Slot = ParseEquipSlot(piece.Slot),
                 SubstatCap = (int)piece.SubstatCap,
                 BaseSubstats = baseStats,
                 CurrentMeldStats = currentMeldStats
@@ -836,10 +796,6 @@
 
             foreach (var stat in currentMeldStats.Keys)
             {
-                // v1.5.8 — DoH/DoL stats have no battle-style piece cap
-                // (SubstatCap derives from battle columns; meaningless for
-                // crafting/gathering gear). Skip so correct crafter melds
-                // never flag as overcapped.
                 if (GearGoblin.Core.Materia.SubstatExt.IsCraftGather(stat)) continue;
 
                 var room = GearGoblin.Core.Materia.StatCaps.RoomFor(meldablePiece, stat);
@@ -848,9 +804,9 @@
                     findings.Add(new AuditFinding(
                         Piece:              piece.Slot,
                         SlotIndex:          -1,
-                        CurrentMateriaName: $"{stat.ToString()} is overcapped",
+                        CurrentMateriaName: $"{stat} is overcapped",
                         Headline:           $"Stat Overcap ({-room} points)",
-                        Detail:             $"→ Extract and meld a different priority stat",
+                        Detail:             "→ Extract and meld a different priority stat",
                         IsWrongStat:        false,
                         IsUnderTier:        false,
                         IsOvercap:          true));
@@ -858,18 +814,31 @@
             }
         }
 
-        cachedFindings   = findings;
-        findingsBoundTo  = ParsedPayload;
+        cachedFindings  = findings;
+        findingsBoundTo = ParsedPayload;
         return findings;
     }
+
+    private static GearGoblin.Core.EquipSlot ParseEquipSlot(string slot) => slot switch
+    {
+        "Head" => GearGoblin.Core.EquipSlot.Head,
+        "Body" => GearGoblin.Core.EquipSlot.Body,
+        "Hands" => GearGoblin.Core.EquipSlot.Hands,
+        "Legs" => GearGoblin.Core.EquipSlot.Legs,
+        "Feet" => GearGoblin.Core.EquipSlot.Feet,
+        "Ears" or "Earring" => GearGoblin.Core.EquipSlot.Earring,
+        "Neck" or "Necklace" => GearGoblin.Core.EquipSlot.Necklace,
+        "Wrists" or "Bracelet" => GearGoblin.Core.EquipSlot.Bracelet,
+        "FingerL" or "RingLeft" => GearGoblin.Core.EquipSlot.RingLeft,
+        "FingerR" or "RingRight" => GearGoblin.Core.EquipSlot.RingRight,
+        "MainHand" => GearGoblin.Core.EquipSlot.MainHand,
+        "OffHand" => GearGoblin.Core.EquipSlot.OffHand,
+        _ => GearGoblin.Core.EquipSlot.Unknown
+    };
 
     private int AuditWrongStatCount() => BuildAuditFindings().Count(f => f.IsWrongStat);
     private int AuditUnderTierCount() => BuildAuditFindings().Count(f => f.IsUnderTier);
     private int AuditOvercapCount()   => BuildAuditFindings().Count(f => f.IsOvercap);
-
-    // Sell/replace count = unique findings (one per problematic materia).
-    // Overcap findings flag the piece, not a specific materia, so they
-    // don't add to the per-materia replace count.
     private int AuditReplaceCount() =>
         BuildAuditFindings().Count(f => f.IsWrongStat || f.IsUnderTier);
 
@@ -887,6 +856,7 @@
         {
             "CriticalHit" => "crit",
             "DirectHit" => "dh",
+            "DirectHitRate" => "dh",
             "Determination" => "det",
             "SkillSpeed" => "sks",
             "SpellSpeed" => "sps",
@@ -915,9 +885,6 @@
         _  => grade.ToString(),
     };
 
-    // ═════════════════════════════════════════════════════════════════
-    //  ADVISOR — circled-number glyphs for rank
-    // ═════════════════════════════════════════════════════════════════
     private string CircledNum(int n) => n switch
     {
         1 => "①", 2 => "②", 3 => "③", 4 => "④", 5 => "⑤",
@@ -925,9 +892,6 @@
         _ => $"({n})",
     };
 
-    // ═════════════════════════════════════════════════════════════════
-    //  OPTIMIZER — 21-job picker
-    // ═════════════════════════════════════════════════════════════════
     private static readonly (string Abbr, string Role)[] AllJobs = new[]
     {
         ("PLD","tank"),  ("WAR","tank"),  ("DRK","tank"),  ("GNB","tank"),
@@ -957,6 +921,20 @@
         ?? ParsedPayload?.Character?.JobAbbreviation
         ?? "GNB";
 
+    private static uint? JobIdForAbbr(string? abbrev) => abbrev?.ToUpperInvariant() switch
+    {
+        "CRP" => 8, "BSM" => 9, "ARM" => 10, "GSM" => 11,
+        "LTW" => 12, "WVR" => 13, "ALC" => 14, "CUL" => 15,
+        "MIN" => 16, "BTN" => 17, "FSH" => 18,
+        "PLD" => 19, "MNK" => 20, "WAR" => 21, "DRG" => 22,
+        "BRD" => 23, "WHM" => 24, "BLM" => 25, "SMN" => 27,
+        "SCH" => 28, "NIN" => 30, "MCH" => 31, "DRK" => 32,
+        "AST" => 33, "SAM" => 34, "RDM" => 35, "GNB" => 37,
+        "DNC" => 38, "RPR" => 39, "SGE" => 40, "VPR" => 41,
+        "PCT" => 42,
+        _ => null,
+    };
+
     private static string JobFullName(string abbr) => abbr.ToUpper() switch
     {
         "PLD" => "Paladin",      "WAR" => "Warrior",     "DRK" => "Dark Knight",  "GNB" => "Gunbreaker",
@@ -971,9 +949,6 @@
         _ => "",
     };
 
-    // ═════════════════════════════════════════════════════════════════
-    //  v0.5.4 FEEDBACK PANEL — state + handlers (unchanged)
-    // ═════════════════════════════════════════════════════════════════
     private const string FeedbackRepoUrl =
         "https://github.com/LastOnionKnight/TonberryTactics";
 
@@ -1062,11 +1037,12 @@
                 userAgent = await JS.InvokeAsync<string>(
                     "eval", "navigator.userAgent");
             }
-            catch { /* swallow */ }
+            catch { }
             sb.AppendLine($"User agent:        {userAgent}");
 
             sb.AppendLine($"Has export loaded: {!string.IsNullOrWhiteSpace(ExportString)}");
-            sb.AppendLine($"Active job:        {(ParsedPayload?.Character?.JobAbbreviation ?? "(none)")}");
+            sb.AppendLine($"Active job:        {ActiveJob()}");
+            sb.AppendLine($"Optimizer mode:    {OptimizerMode}");
             sb.AppendLine($"Optimizer ran:     {Optimization != null}");
             sb.AppendLine($"Plan emitted:      {!string.IsNullOrEmpty(GeneratedImportString)}");
             sb.AppendLine($"Generated at:      {DateTime.UtcNow:o}");
@@ -1074,6 +1050,7 @@
         }
         return sb.ToString();
     }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -1082,18 +1059,7 @@
             {
                 await JS.InvokeVoidAsync("ttHero.init");
             }
-            catch { /* ignore if missing */ }
+            catch { }
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
