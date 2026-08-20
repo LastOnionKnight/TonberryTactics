@@ -1,133 +1,214 @@
 # Tonberry Tactics
 
-Web companion to [GearGoblin](https://github.com/LastOnionKnight/GearGoblin), the Dalamud plugin that now ships as a full **CharacterPanelRefined replacement** for Final Fantasy XIV (v0.4.5+).
+**Current version: 1.6.1**
 
-Tonberry Tactics is a Blazor WebAssembly app that consumes the `GG-EXPORT:v1:` strings produced by GearGoblin's `/goblinexport` command, runs an in-browser materia optimizer over the parsed gearset, and emits a `GG-PLAN:v1:` round-trip string that the plugin's planned `/goblinimport` will consume back into a native checklist inside the game's Character window.
+Tonberry Tactics is the web companion to the GearGoblin Dalamud plugin. Together with `GearGoblin.Core`, the three repositories form one lockstep gearing and materia-planning system for Final Fantasy XIV.
 
 **Live site:** https://tonberrytactics.pages.dev
 
-> **Status:** v0.5.2 — docs/version alignment with GearGoblin v0.4.5. The optimizer, parser, and wire format are unchanged from v0.5.1 (GG-EXPORT:v1: still binary-identical). Landing page now carries a Plugin Update callout describing what v0.4.5 brings to the in-game side. Multi-job profiles, stat-cap awareness, and the Balance preset toggle remain queued for v0.5.3+.
+## Ecosystem
 
-## Why pair them
-
-GearGoblin v0.4.5 takes over the native Character window: compact derived stats per substat (Crit chance · damage · DI · breakpoint hint, Det DI, DH chance · DI), real GCD, role-gated Tenacity / Piety rows, and a Materia Advisor section with the top three meld actions. If CharacterPanelRefined is also installed, GG auto-detects it and steps aside on the derived-stat injection to avoid double-display.
-
-Tonberry Tactics is the **web-side optimizer** that pairs with the panel takeover. The plugin shows you what you have and the next-tier hints; this site does the heavier combinatorial materia search outside the game's frame budget, on whatever device you have handy. Round-trip back into the plugin lands as a native checklist (planned for `/goblinimport` in plugin v0.5.0).
-
-## What it does (v0.5.2)
-
-1. You run `/goblinexport` in FFXIV (requires GearGoblin v0.4.1+; v0.4.5+ recommended). A `GG-EXPORT:v1:<base64>` string lands on your clipboard.
-2. You paste that string into the IMPORT FIELD DATA box on tonberrytactics.pages.dev.
-3. Tonberry Tactics:
-   - Parses the string (`Services/GearsetParser.cs`).
-   - Displays your real character data — job, level, average item level, equipped piece count — in the ADVENTURER sidebar card.
-   - Runs the hardcoded GNB Pure-Math optimizer (`Services/PureMathOptimizer.cs`) across every equipped piece, fills each empty meld slot with a Tier XII materia by rotating through the priority list `[Critical Hit, Direct Hit Rate, Determination]`.
-   - Renders the recommendations under MATERIA REQUIRED with the optimization mode label visible so you know what was applied.
-   - Serializes the plan to `GG-PLAN:v1:<base64>` (`Services/PlanSerializer.cs`) and stages it in the EXPORT TO GAME card with a one-click COPY button (real `navigator.clipboard.writeText` via IJSRuntime).
-4. The portrait icon in the sidebar switches state with the pipeline: **AWAITING** (subdued red ring) → **ENGAGED** (lightning, post-optimize) → **WARNING** (vivid red ring, parse failed).
-
-## Wire format
-
-Both directions are versioned base64-encoded JSON with a literal-string prefix:
-
-```
-GG-EXPORT:v1:<base64(JSON)>     // plugin → web
-GG-PLAN:v1:<base64(JSON)>       // web → plugin
+```text
+GearGoblin plugin     — in-game character/gear reader, planner, importer/exporter
+GearGoblin.Core       — shared optimizer, formulas, job profiles, schema types
+TonberryTactics web   — browser-side audit/optimization and plan export
 ```
 
-The DTOs in `Models/ExportSchema.cs` match GearGoblin's `Services/GearsetExporter.cs` records verbatim. Schema versions bump in the prefix (`v1:` → `v2:`) so consumers can refuse incompatible payloads cleanly without trying to decode them.
+All three are intended to ship at the same product version. Current lockstep release: **1.6.1**.
 
-`ExportPayloadV1` carries: `Plugin` name, plugin `Version`, ISO `ExportedAt`, an `ExportCharacterV1` (job ID + abbreviation, level, average item level), and a list of `ExportPieceV1` (slot name, item ID + name + level, HQ flag, guaranteed materia slot count, overmeld permission, list of `ExportMateriaV1` melded). `PlanPayloadV1` mirrors that shape on the way back, with a list of `PlanMeldV1` recommendations.
+## Current workflow
+
+1. In FFXIV, run:
+
+```text
+/ttexport
+```
+
+2. GearGoblin copies a versioned gear export to the clipboard. The current producer emits:
+
+```text
+GG-EXPORT:v2:<base64-json>
+```
+
+3. Paste that string into the Tonberry Tactics web app.
+4. The web app parses the character and equipped gear, displays the current stat/gear state, and runs the shared `GearGoblin.Core` meld optimizer.
+5. Copy the generated plan:
+
+```text
+GG-PLAN:v1:<base64-json>
+```
+
+6. Back in FFXIV, run:
+
+```text
+/ttimport
+```
+
+GearGoblin imports and persists the plan and surfaces it in the plugin UI.
+
+The web parser remains backward-compatible with `GG-EXPORT:v1:` as well as the current v2 export.
+
+## What the web app does today
+
+### Gear import
+
+`Services/GearsetParser.cs` accepts both export schema generations currently in circulation:
+
+- `GG-EXPORT:v1:`
+- `GG-EXPORT:v2:`
+
+v1 payloads are adapted into the current v2 model so the rest of the application can operate on one normalized shape.
+
+### Shared optimizer
+
+The old hardcoded GNB-only `PureMathOptimizer` is retired.
+
+Current optimization routes through `GearGoblin.Core.Materia.MeldOptimizer` using the same shared logic as the in-game plugin. This prevents the web and plugin from recommending different materia for the same gearset.
+
+Current shared optimizer capabilities include:
+
+- all 21 standard combat jobs
+- job-aware relevant stats and weighting
+- per-piece substat caps
+- empty-slot recommendations
+- overcap / zero-value / replacement auditing
+- current endgame materia tiers
+- Pure Math and Balance-weight infrastructure
+- DoH/DoL identification and display-only handling
+
+### Character and stat display
+
+Current v2 exports include total stat data and per-piece cap/base-substat context. The web UI uses that to display the imported character, equipped pieces, materia state, and stat-profile information.
+
+### Plan serialization
+
+`Services/PlanSerializer.cs` serializes optimizer output to `GG-PLAN:v1:` for `/ttimport` in the plugin.
+
+The current plan schema carries meld recommendations. Future schema revisions are expected as Raider-specific plan data such as consumables is added.
 
 ## Tech stack
 
-- **Blazor WebAssembly** on **.NET 10** — entirely client-side, no backend.
-- **Cloudflare Pages** deploy at https://tonberrytactics.pages.dev.
-- `build.sh` installs the .NET 10 SDK during Pages' build step, then runs `dotnet publish -c Release -o output`. Pages serves `output/wwwroot/`.
-- **VT323** and **Press Start 2P** Google Fonts for the retro FF SNES aesthetic.
-- No external JS libraries. Knife cursor in the materia list is inline SVG. Portrait icons are static JPGs in `wwwroot/portraits/`.
+- Blazor WebAssembly
+- .NET 10
+- entirely client-side application
+- Cloudflare Pages deployment
+- shared `GearGoblin.Core` git submodule
 
-## Project layout
+No backend is required for the core export → optimize → plan workflow.
 
-```
+## Repository layout
+
+```text
 TonberryTactics/
 ├─ Models/
-│  └─ ExportSchema.cs           Wire-format DTOs (mirror of plugin)
+│  └─ ExportSchema.cs            web-facing schema/adaptation types
 ├─ Services/
-│  ├─ GearsetParser.cs          GG-EXPORT:v1: → ExportPayloadV1
-│  ├─ PureMathOptimizer.cs      Hardcoded GNB Pure-Math
-│  └─ PlanSerializer.cs         OptimizationResult → GG-PLAN:v1:
+│  ├─ GearsetParser.cs           GG-EXPORT v1/v2 parser
+│  ├─ MeldOptimizerAdapter.cs    bridge into GearGoblin.Core
+│  └─ PlanSerializer.cs          GG-PLAN:v1 producer
+├─ Shared/
+│  └─ CapGauge.razor
 ├─ Pages/
-│  └─ Index.razor               Single-page app, all UI + state
-├─ wwwroot/
-│  └─ portraits/                Refia portrait icons (state-switched)
-│     ├─ portrait_danger.jpg
-│     ├─ portrait_danger_alt1.jpg
-│     ├─ portrait_combat.jpg
-│     └─ portrait_combat_alt1.jpg
+│  └─ Index.razor                main application UI/state
+├─ Resources/
+├─ Design-Reference/
+├─ docs/
+├─ external/GearGoblin.Core/     shared Core git submodule
 ├─ TonberryTactics.csproj
+├─ build.sh
 ├─ CHANGELOG.md
-├─ README.md                    (this file)
-└─ release.ps1                  Unified push script (same as GearGoblin)
+└─ README.md
+```
+
+## Core submodule
+
+The web app consumes Core from:
+
+```text
+external/GearGoblin.Core/
+```
+
+Fresh clone setup:
+
+```powershell
+git submodule update --init --recursive
+```
+
+The project reference is:
+
+```xml
+<ProjectReference Include="external\GearGoblin.Core\GearGoblin.Core.csproj" />
 ```
 
 ## Build locally
 
-```
+```powershell
+git submodule update --init --recursive
 dotnet restore
-dotnet run                      # serves on http://localhost:5000 by default
+dotnet build -c Release
 ```
 
-Or to produce the artifacts that Cloudflare Pages serves:
-
-```
-dotnet publish -c Release -o output
-# output/wwwroot/ is the static site
-```
-
-## Release
-
-`release.ps1` is identical to the one in the GearGoblin repo. From the project root:
+For local development:
 
 ```powershell
-.\release.ps1 -DryRun           # preview the commit message
-.\release.ps1                   # commit, tag vX.Y.Z, push to origin/main
+dotnet run
 ```
 
-The script auto-detects the project from the `.csproj` file in the CWD, reads `<Version>` from it, generates the commit message from the matching CHANGELOG entry, tags `vX.Y.Z`, and pushes with `--follow-tags`. Cloudflare Pages picks up the push and rebuilds automatically.
+For Cloudflare/static deployment output:
 
-Flags: `-DryRun`, `-Message "override"`, `-SkipPush`.
+```powershell
+dotnet publish -c Release -o output
+```
 
-## Roadmap
+Cloudflare Pages serves `output/wwwroot/`.
 
-**v0.5.2 (planned):**
-- Multi-job stat profiles for all 21 combat jobs, replacing the hardcoded GNB priority.
-- Stat-cap awareness — refuse to recommend a materia that would push a stat past its cap. Currently the optimizer is greedy and may over-recommend.
-- Balance preset weighting alongside Pure Math, with a UI toggle.
-- Audit pass: surface wrong-stat / overcap / outdated-tier existing melds, not just empty slots.
+## Versioning and releases
 
-**v0.6.x (longer-term):**
-- Extract `GearGoblin.Core.dll` as a shared assembly compiling for both .NET and WebAssembly. Retires the duplicated `PureMathOptimizer` here in favor of the plugin's real `MeldOptimizer`. The web app's parser/serializer/UI layers stay; only the math core is replaced.
-- Overmeld recommendations with success-probability math.
-- Shareable plan URLs (encode the export+plan in the URL fragment so plans can be linked in Discord).
+Tonberry Tactics follows **trinity lockstep** with the plugin and Core:
 
-## Why offload to a web app?
+```text
+GearGoblin          1.6.1
+GearGoblin.Core     1.6.1
+TonberryTactics     1.6.1
+```
 
-- Optimization runs on phones and tablets without launching the game.
-- Decouples the combinatorial search from FFXIV's frame budget.
-- Plans become shareable when the URL-encoded variant ships.
-- Browser-side updates ship instantly without a plugin reinstall.
+The repository retains `release.ps1` and the Cloudflare Pages build flow. Version changes should be coordinated across all three repositories unless a divergence is explicitly intentional.
 
-## Companion plugin
+## Current known debt
 
-Get GearGoblin at https://github.com/LastOnionKnight/GearGoblin. Tonberry Tactics requires GearGoblin **v0.4.1 or later** for the `/goblinexport` command. GearGoblin v0.5.0+ will add `/goblinimport` to consume the `GG-PLAN:v1:` strings this app produces.
+- Some user-facing in-page copy still carries older version-era wording and should be normalized as UI polish continues.
+- `GG-PLAN:v1` only carries meld recommendations today.
+- Plan serialization must remain version-accurate rather than advertising an old emitter version.
+- DoH/DoL optimization remains display-only until crafting/gathering-specific formulas are implemented.
+- Raider mode needs first-class support across the system rather than remaining primarily a plugin plan concept.
+
+## Next planned feature: Raider consumables
+
+The next major planning feature is a Raider food/potion advisor shared with the in-game plugin.
+
+The intended model is:
+
+- plugin enumerates current FFXIV food/medicine through live Lumina data
+- real player stats determine actual capped HQ food gains
+- Core owns reusable consumable scoring rules where possible
+- the correct offensive main-stat potion is selected for the current job
+- loaded BiS data can override the calculated recommendation when the source explicitly specifies consumables
+- a future plan schema revision carries consumable recommendations between web and plugin
+
+This is deliberately data-driven so new food and potion tiers do not require maintaining a hardcoded per-job item-name table.
+
+## Companion repositories
+
+- Plugin: https://github.com/LastOnionKnight/GearGoblin
+- Core: https://github.com/LastOnionKnight/GearGoblin-Core
+- Live site: https://tonberrytactics.pages.dev
 
 ## Credits
 
-- **GearGoblin** and the underlying materia / stat-formula work — see the [GearGoblin README](https://github.com/LastOnionKnight/GearGoblin/blob/main/README.md) for the full credits stack (CharacterPanelRefined, Akhmorning Allagan Studies, The Balance Discord).
-- Portrait artwork: original character designs of Refia Rakkiri, by the project author.
-- TLF aesthetic: Tonberry Liberation Front. *No gear. No hope. No pants. Just onions.*
+Tonberry Tactics is part of the LastOnionKnight / Refia Rakkiri project.
+
+Shared combat-stat/materia behavior is implemented in GearGoblin.Core; see the plugin/Core repositories for additional formula and third-party attribution notes.
 
 ## License
 
-TBD — currently unreleased software, mirroring GearGoblin's license stance. To be added prior to v1.0.0.
+See the repository and component license files for the current licensing state. Third-party code and assets retain their original license terms.
