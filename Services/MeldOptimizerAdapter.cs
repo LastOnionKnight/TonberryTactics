@@ -7,9 +7,17 @@ using TonberryTactics.Models;
 
 namespace TonberryTactics.Services;
 
+/// <summary>
+/// Adapts a GG-EXPORT:v2 payload into GearGoblin.Core's optimizer model.
+/// The web and plugin therefore run the same meld engine against the same
+/// current-stat baseline and selected weight mode.
+/// </summary>
 public static class MeldOptimizerAdapter
 {
-    public static OptimizerResult Optimize(TonberryTactics.Models.ExportPayloadV2 payload)
+    public static OptimizerResult Optimize(ExportPayloadV2 payload) =>
+        Optimize(payload, WeightMode.BalancePreset);
+
+    public static OptimizerResult Optimize(ExportPayloadV2 payload, WeightMode weightMode)
     {
         var pieces = new List<MeldablePiece>();
 
@@ -23,19 +31,16 @@ public static class MeldOptimizerAdapter
             {
                 foreach (var kvp in p.BaseSubstats)
                 {
-                    if (Enum.TryParse<Substat>(kvp.Key, out var s))
-                        baseSubstats[s] = kvp.Value;
+                    if (Enum.TryParse<Substat>(kvp.Key, out var stat))
+                        baseSubstats[stat] = kvp.Value;
                 }
             }
 
             var melds = new List<MeldSlot>();
-            var stats = new Dictionary<Substat, int>();
+            var currentMeldStats = new Dictionary<Substat, int>();
 
             foreach (var m in p.Materia)
             {
-                if (!Enum.TryParse<Substat>(m.StatName, out var s))
-                    s = Substat.None;
-
                 var spec = MateriaCatalog.FromGrade(m.StatName, m.Grade, m.StatValue);
                 melds.Add(new MeldSlot
                 {
@@ -45,28 +50,28 @@ public static class MeldOptimizerAdapter
                     SuccessRate = SuccessRateForSlot(m.SlotIndex)
                 });
 
-                if (s != Substat.None)
+                if (spec.Stat != Substat.None)
                 {
-                    stats.TryGetValue(s, out var existing);
-                    stats[s] = existing + m.StatValue;
+                    currentMeldStats.TryGetValue(spec.Stat, out var existing);
+                    currentMeldStats[spec.Stat] = existing + m.StatValue;
                 }
             }
 
-            int total = p.IsOvermeldAllowed ? 5 : p.MateriaSlotCount;
+            int totalSlots = p.IsOvermeldAllowed ? 5 : p.MateriaSlotCount;
             var existingIndices = new HashSet<int>(melds.Select(x => x.SlotIndex));
 
-            for (int i = 0; i < total; i++)
+            for (int i = 0; i < totalSlots; i++)
             {
-                if (!existingIndices.Contains(i))
+                if (existingIndices.Contains(i))
+                    continue;
+
+                melds.Add(new MeldSlot
                 {
-                    melds.Add(new MeldSlot
-                    {
-                        SlotIndex = i,
-                        IsGuaranteed = i < p.MateriaSlotCount,
-                        Current = null,
-                        SuccessRate = SuccessRateForSlot(i)
-                    });
-                }
+                    SlotIndex = i,
+                    IsGuaranteed = i < p.MateriaSlotCount,
+                    Current = null,
+                    SuccessRate = SuccessRateForSlot(i)
+                });
             }
 
             melds.Sort((a, b) => a.SlotIndex.CompareTo(b.SlotIndex));
@@ -79,20 +84,44 @@ public static class MeldOptimizerAdapter
                 ItemLevel = p.ItemLevel,
                 IsHighQuality = p.IsHighQuality,
                 Slots = melds,
-                CurrentMeldStats = stats,
+                CurrentMeldStats = currentMeldStats,
                 BaseSubstats = baseSubstats,
                 SubstatCap = (int)p.SubstatCap
             });
         }
 
         var profile = JobProfiles.GetOrDefault(payload.Character.Job);
-        
-        // For the web app, we don't have current live stats from the game.
-        // We just pass an empty stat snapshot and default LevelMod.
-        var statsSnapshot = new StatSnapshot();
+        var stats = BuildStatSnapshot(payload.Character);
         var mod = LevelTable.Get(payload.Character.Level);
 
-        return MeldOptimizer.Optimize(pieces, statsSnapshot, mod, profile, WeightMode.BalancePreset);
+        return MeldOptimizer.Optimize(pieces, stats, mod, profile, weightMode);
+    }
+
+    private static StatSnapshot BuildStatSnapshot(ExportCharacterV2 character)
+    {
+        var totals = character.TotalStats
+            .GroupBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Last().Value, StringComparer.OrdinalIgnoreCase);
+
+        int Get(string name) => totals.TryGetValue(name, out var value) ? value : 0;
+
+        return new StatSnapshot(
+            Crit: Get("Critical Hit"),
+            Det: Get("Determination"),
+            DH: Get("Direct Hit"),
+            SkS: Get("Skill Speed"),
+            SpS: Get("Spell Speed"),
+            Ten: Get("Tenacity"),
+            Pie: Get("Piety"),
+            Level: character.Level,
+            JobId: character.Job,
+            Craftsmanship: Get("Craftsmanship"),
+            Control: Get("Control"),
+            CP: Get("CP"),
+            Gathering: Get("Gathering"),
+            Perception: Get("Perception"),
+            GP: Get("GP")
+        );
     }
 
     private static double SuccessRateForSlot(int slotIndex) => slotIndex switch
@@ -105,7 +134,3 @@ public static class MeldOptimizerAdapter
         _ => 0.00,
     };
 }
-
-
-
-
