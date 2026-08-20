@@ -17,7 +17,10 @@ public static class MeldOptimizerAdapter
     public static OptimizerResult Optimize(ExportPayloadV2 payload) =>
         Optimize(payload, WeightMode.BalancePreset);
 
-    public static OptimizerResult Optimize(ExportPayloadV2 payload, WeightMode weightMode)
+    public static OptimizerResult Optimize(
+        ExportPayloadV2 payload,
+        WeightMode weightMode,
+        uint? jobOverride = null)
     {
         var pieces = new List<MeldablePiece>();
 
@@ -90,14 +93,18 @@ public static class MeldOptimizerAdapter
             });
         }
 
-        var profile = JobProfiles.GetOrDefault(payload.Character.Job);
-        var stats = BuildStatSnapshot(payload.Character);
+        uint effectiveJobId = jobOverride.GetValueOrDefault(payload.Character.Job);
+        if (effectiveJobId == 0)
+            effectiveJobId = payload.Character.Job;
+
+        var profile = JobProfiles.GetOrDefault(effectiveJobId);
+        var stats = BuildStatSnapshot(payload.Character, effectiveJobId);
         var mod = LevelTable.Get(payload.Character.Level);
 
         return MeldOptimizer.Optimize(pieces, stats, mod, profile, weightMode);
     }
 
-    private static StatSnapshot BuildStatSnapshot(ExportCharacterV2 character)
+    private static StatSnapshot BuildStatSnapshot(ExportCharacterV2 character, uint effectiveJobId)
     {
         var totals = character.TotalStats
             .GroupBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase)
@@ -114,7 +121,7 @@ public static class MeldOptimizerAdapter
             Ten: Get("Tenacity"),
             Pie: Get("Piety"),
             Level: character.Level,
-            JobId: character.Job,
+            JobId: effectiveJobId,
             Craftsmanship: Get("Craftsmanship"),
             Control: Get("Control"),
             CP: Get("CP"),
