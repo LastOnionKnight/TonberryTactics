@@ -9,8 +9,7 @@ namespace TonberryTactics.Services;
 
 /// <summary>
 /// Serializes an optimization result to a <c>GG-PLAN:v1:&lt;base64&gt;</c>
-/// string suitable for pasting back into GearGoblin's planned
-/// <c>/goblinimport</c> command. v0.5.1.
+/// string for round-trip import into the Tonberry Tactics Dalamud plugin.
 ///
 /// <para>
 /// Wire-format symmetric with the parser side. Schema versioned in the
@@ -19,9 +18,8 @@ namespace TonberryTactics.Services;
 /// </summary>
 public static class PlanSerializer
 {
-    private const string Prefix         = "GG-PLAN:v1:";
-    private const int    SchemaVersion  = 1;
-    private const string EmitterName    = "TonberryTactics";
+    private const string Prefix        = "GG-PLAN:v1:";
+    private const int    SchemaVersion = 1;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -51,19 +49,16 @@ public static class PlanSerializer
         );
 
         var plan = new PlanPayloadV1(
-            V:           SchemaVersion,
-            Plugin:      "TonberryTactics",
-            Version:     "1.1.4",
-            GeneratedAt: DateTime.UtcNow.ToString("o"),
+            V:               SchemaVersion,
+            Plugin:          "TonberryTactics",
+            Version:         emitterVersion,
+            GeneratedAt:     DateTime.UtcNow.ToString("o"),
             SourceCharacter: sourceChar,
-            Melds:       melds
+            Melds:           melds
         );
+
         var json    = JsonSerializer.Serialize(plan, JsonOptions);
         var bytes   = Encoding.UTF8.GetBytes(json);
-        var encoded = Prefix + Convert.ToBase64String(bytes);
-        return encoded;
+        return Prefix + Convert.ToBase64String(bytes);
     }
-
-
-
 }
