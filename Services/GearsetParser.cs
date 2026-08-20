@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using TonberryTactics.Models;
@@ -6,15 +7,12 @@ using TonberryTactics.Models;
 namespace TonberryTactics.Services;
 
 /// <summary>
-/// Parses <c>GG-EXPORT:v1:&lt;base64&gt;</c> strings produced by GearGoblin's
-/// <c>/goblinexport</c> command. Returns a typed payload or a diagnostic
-/// error string suitable for showing the user. v0.5.1.
+/// Parses <c>GG-EXPORT:v1:</c> and <c>GG-EXPORT:v2:</c> strings produced by
+/// the Tonberry Tactics Dalamud plugin's <c>/ttexport</c> command.
+/// v1 remains accepted for backward compatibility; v2 is the current export.
 /// </summary>
 public static class GearsetParser
 {
-    private const string Prefix         = "GG-EXPORT:v1:";
-    private const int    SchemaVersion  = 1;
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -26,7 +24,7 @@ public static class GearsetParser
     {
         if (string.IsNullOrWhiteSpace(clipboardText))
         {
-            return new ParseResult(false, null, "Clipboard is empty. Run /goblinexport in-game first.");
+            return new ParseResult(false, null, "Clipboard is empty. Run /ttexport in-game first.");
         }
 
         var trimmed = clipboardText.Trim();
@@ -35,8 +33,8 @@ public static class GearsetParser
             !trimmed.StartsWith("GG-EXPORT:v2:", StringComparison.Ordinal))
         {
             return new ParseResult(false, null,
-                $"Expected prefix 'GG-EXPORT:v1:' or 'v2:' but got '{trimmed[..Math.Min(20, trimmed.Length)]}...'. " +
-                "Did you copy the right string from /goblinexport?");
+                $"Expected prefix 'GG-EXPORT:v1:' or 'GG-EXPORT:v2:' but got '{trimmed[..Math.Min(20, trimmed.Length)]}...'. " +
+                "Copy a fresh export from /ttexport.");
         }
 
         var prefixLength = trimmed.IndexOf(':', 10) + 1;
@@ -55,7 +53,7 @@ public static class GearsetParser
         try
         {
             var json = Encoding.UTF8.GetString(jsonBytes);
-            if (trimmed.StartsWith("GG-EXPORT:v2:"))
+            if (trimmed.StartsWith("GG-EXPORT:v2:", StringComparison.Ordinal))
             {
                 payload = JsonSerializer.Deserialize<ExportPayloadV2>(json, JsonOptions);
             }
@@ -93,7 +91,7 @@ public static class GearsetParser
         {
             return new ParseResult(false, null,
                 $"Schema version mismatch: expected v1 or v2, got v{payload.V}. " +
-                "Update Tonberry Tactics or downgrade GearGoblin.");
+                "Update Tonberry Tactics and create a fresh /ttexport payload.");
         }
 
         if (payload.Character is null || payload.Equipped is null || payload.Equipped.Count == 0)
