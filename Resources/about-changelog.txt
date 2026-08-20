@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.2] - 2026-08-20
+- **Optimizer-Mode Wiring**: Wired the Pure Math and Balance preset buttons to directly control active optimizer scoring mode.
+- **Job Selector Wiring**: Wired the job override selector to correctly control the active optimization profile, audit profile, and emitted plan job identity.
+- **Real Stat Snapshot**: Configured optimizer to consume the actual v2 exported `TotalStats` to populate `StatSnapshot` rather than falling back to zeroed stats when real data is available.
+- **Plan Serializer**: Corrected the plan serialization version to dynamically emit the current `EmitterVersion` rather than hardcoding `1.1.4`.
+- **Project Reference**: Fixed the project reference path to the shared `GearGoblin.Core` assembly.
+- **Hygiene**: Cleaned up version indicators and updated companion readmes.
+
 ## [1.6.1] - 2026-08-14
 - **Lockstep Patch**: Version bump to sync with FFXIV Patch 2026.08.11.
 

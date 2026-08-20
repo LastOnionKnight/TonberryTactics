@@ -4,6 +4,8 @@ using System.Linq;
 using GearGoblin.Core;
 using GearGoblin.Core.Materia;
 using TonberryTactics.Models;
+using ExportPayloadV2 = TonberryTactics.Models.ExportPayloadV2;
+using ExportCharacterV2 = TonberryTactics.Models.ExportCharacterV2;
 
 namespace TonberryTactics.Services;
 

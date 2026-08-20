@@ -5,10 +5,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.6.1.0</Version>
-    <AssemblyVersion>1.6.1.0</AssemblyVersion>
-    <FileVersion>1.6.1.0</FileVersion>
-    <InformationalVersion>1.6.1</InformationalVersion>
+    <Version>1.6.2.0</Version>
+    <AssemblyVersion>1.6.2.0</AssemblyVersion>
+    <FileVersion>1.6.2.0</FileVersion>
+    <InformationalVersion>1.6.2</InformationalVersion>
     <Authors>LastOnionKnight</Authors>
     <Description>Tonberry Tactics web companion for the GearGoblin Dalamud plugin. Parses GG-EXPORT v1/v2 payloads, displays imported gear and stats, runs the shared GearGoblin.Core meld optimizer, and emits GG-PLAN:v1 recommendations for /ttimport.</Description>
     <RepositoryUrl>https://github.com/LastOnionKnight/TonberryTactics</RepositoryUrl>
@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="external\GearGoblin.Core\GearGoblin.Core.csproj" />
+    <ProjectReference Include="external\GearGoblin.Core\GearGoblin.Core\GearGoblin.Core.csproj" />
   </ItemGroup>
 
 </Project>

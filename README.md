@@ -1,7 +1,7 @@
 # Tonberry Tactics
 
-**Current released version: 1.6.1**  
-**Current `main`: unreleased 1.6.2 stabilization work**
+**Current released version: 1.6.2**  
+**Current `main`: unreleased 1.7 solver foundation work**
 
 Tonberry Tactics is the browser-side planning companion to the GearGoblin Dalamud plugin. Together with `GearGoblin.Core`, the three repositories form one FFXIV character optimization platform.
 
