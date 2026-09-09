@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.6.3] - 2026-09-09
+- **Lockstep Patch**: Version bump to sync with FFXIV Patch 2026.09.09.
+
 ## [1.6.2] - 2026-08-20
 - **Optimizer-Mode Wiring**: Wired the Pure Math and Balance preset buttons to directly control active optimizer scoring mode.
 - **Job Selector Wiring**: Wired the job override selector to correctly control the active optimization profile, audit profile, and emitted plan job identity.
