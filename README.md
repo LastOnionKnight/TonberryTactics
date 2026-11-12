@@ -44,7 +44,7 @@ The retired GNB-only web optimizer is no longer used. `Services/MeldOptimizerAda
 
 Current web-side behavior includes:
 
-- all 21 standard combat jobs
+- all 26 combat jobs (21 standard, BLU & BST limited, plus Bastion & Zephyr Evercold baseline placeholders)
 - real exported v2 total-stat ingestion into `StatSnapshot`
 - per-piece cap context
 - empty-slot recommendations
